@@ -6,6 +6,7 @@ from dddpy.domain.todo.entities import Todo
 from dddpy.domain.todo.exceptions import (
     TodoAlreadyCompletedError,
     TodoAlreadyStartedError,
+    TodoDependencyNotCompletedError,
     TodoNotFoundError,
 )
 from dddpy.domain.todo.repositories import TodoRepository
@@ -38,6 +39,12 @@ class StartTodoUseCaseImpl(StartTodoUseCase):
 
         if todo.status == TodoStatus.IN_PROGRESS:
             raise TodoAlreadyStartedError
+
+        # Check if dependencies are satisfied
+        if not todo.can_start(self.todo_repository.find_by_id):
+            raise TodoDependencyNotCompletedError(
+                'Cannot start todo because dependencies are not completed'
+            )
 
         todo.start()
         self.todo_repository.save(todo)

@@ -2,6 +2,8 @@
 
 from .todo_already_completed_error import TodoAlreadyCompletedError
 from .todo_already_started_error import TodoAlreadyStartedError
+from .todo_circular_dependency_error import TodoCircularDependencyError
+from .todo_dependency_not_completed_error import TodoDependencyNotCompletedError
 from .todo_not_found_error import TodoNotFoundError
 from .todo_not_started_error import TodoNotStartedError
 
@@ -10,4 +12,6 @@ __all__ = [
     'TodoNotStartedError',
     'TodoAlreadyCompletedError',
     'TodoAlreadyStartedError',
+    'TodoCircularDependencyError',
+    'TodoDependencyNotCompletedError',
 ]

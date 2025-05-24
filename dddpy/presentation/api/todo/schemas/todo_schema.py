@@ -1,5 +1,6 @@
 """Query model for Todo entities in the application."""
 
+from typing import List
 from pydantic import BaseModel, Field
 
 from dddpy.domain.todo.entities import Todo
@@ -12,6 +13,7 @@ class TodoSchema(BaseModel):
     title: str = Field(examples=['Complete the project'])
     description: str = Field(examples=['Finish implementing the DDD architecture'])
     status: str = Field(examples=['not_started'])
+    dependencies: List[str] = Field(examples=[['456e4567-e89b-12d3-a456-426614174001']])
     created_at: int = Field(examples=[1136214245000])
     updated_at: int = Field(examples=[1136214245000])
     completed_at: int | None = Field(examples=[1136214245000])
@@ -29,6 +31,7 @@ class TodoSchema(BaseModel):
             title=todo.title.value if todo.title else '',
             description=todo.description.value if todo.description else '',
             status=todo.status.value,
+            dependencies=[str(dep_id.value) for dep_id in todo.dependencies.values],
             created_at=int(todo.created_at.timestamp() * 1000),
             updated_at=int(todo.updated_at.timestamp() * 1000),
             completed_at=int(todo.completed_at.timestamp() * 1000)

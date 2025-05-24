@@ -14,6 +14,7 @@ from dddpy.usecase.todo import (
     DeleteTodoUseCase,
     FindTodoByIdUseCase,
     FindTodosUseCase,
+    SetDependenciesUseCase,
     StartTodoUseCase,
     UpdateTodoUseCase,
     new_complete_todo_usecase,
@@ -21,6 +22,7 @@ from dddpy.usecase.todo import (
     new_delete_todo_usecase,
     new_find_todo_by_id_usecase,
     new_find_todos_usecase,
+    new_set_dependencies_usecase,
     new_start_todo_usecase,
     new_update_todo_usecase,
 )
@@ -91,3 +93,10 @@ def get_find_todos_usecase(
 ) -> FindTodosUseCase:
     """Get a FindTodosUseCase instance with dependencies injected."""
     return new_find_todos_usecase(todo_repository)
+
+
+def get_set_dependencies_usecase(
+    todo_repository: TodoRepository = Depends(get_todo_repository),
+) -> SetDependenciesUseCase:
+    """Get a SetDependenciesUseCase instance with dependencies injected."""
+    return new_set_dependencies_usecase(todo_repository)

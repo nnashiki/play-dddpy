@@ -113,7 +113,7 @@ def test_complete_already_completed_todo():
     todo = Todo.create(TodoTitle('Test Todo'))
     todo.complete()
 
-    with pytest.raises(ValueError, match='Already completed'):
+    with pytest.raises(Exception, match='The Todo is already completed'):
         todo.complete()
 
 

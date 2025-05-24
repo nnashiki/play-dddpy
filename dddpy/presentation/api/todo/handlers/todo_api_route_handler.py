@@ -8,6 +8,7 @@ from fastapi import Depends, FastAPI, HTTPException, status
 from dddpy.domain.todo.exceptions import (
     TodoAlreadyCompletedError,
     TodoAlreadyStartedError,
+    TodoDependencyNotCompletedError,
     TodoNotFoundError,
 )
 from dddpy.domain.todo.value_objects import TodoDescription, TodoId, TodoTitle
@@ -19,7 +20,10 @@ from dddpy.infrastructure.di.injection import (
     get_start_todo_usecase,
     get_update_todo_usecase,
 )
-from dddpy.presentation.api.todo.error_messages import ErrorMessageTodoNotFound
+from dddpy.presentation.api.todo.error_messages import (
+    ErrorMessageTodoNotFound,
+    TodoDependencyNotCompletedErrorMessage,
+)
 from dddpy.presentation.api.todo.schemas import (
     TodoCreateSchema,
     TodoSchema,
@@ -102,14 +106,20 @@ class TodoApiRouteHandler:
                 description = (
                     TodoDescription(data.description) if data.description else None
                 )
+                # Convert dependencies from string UUIDs to TodoId objects
+                dependencies = None
+                if data.dependencies:
+                    dependencies = [
+                        TodoId(UUID(dep_id)) for dep_id in data.dependencies
+                    ]
             except ValueError as e:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=e,
+                    detail=str(e),
                 ) from e
 
             try:
-                todo = usecase.execute(title, description)
+                todo = usecase.execute(title, description, dependencies)
             except Exception as e:
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -139,14 +149,20 @@ class TodoApiRouteHandler:
                 description = (
                     TodoDescription(data.description) if data.description else None
                 )
+                # Convert dependencies from string UUIDs to TodoId objects
+                dependencies = None
+                if data.dependencies:
+                    dependencies = [
+                        TodoId(UUID(dep_id)) for dep_id in data.dependencies
+                    ]
             except ValueError as e:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=e,
+                    detail=str(e),
                 ) from e
 
             try:
-                todo = usecase.execute(_id, title, description)
+                todo = usecase.execute(_id, title, description, dependencies)
             except TodoNotFoundError as e:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
@@ -167,6 +183,9 @@ class TodoApiRouteHandler:
                 status.HTTP_404_NOT_FOUND: {
                     'model': ErrorMessageTodoNotFound,
                 },
+                status.HTTP_400_BAD_REQUEST: {
+                    'model': TodoDependencyNotCompletedErrorMessage,
+                },
             },
         )
         def start_todo(
@@ -182,6 +201,11 @@ class TodoApiRouteHandler:
                     detail=e.message,
                 ) from e
             except TodoAlreadyStartedError as e:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=e.message,
+                ) from e
+            except TodoDependencyNotCompletedError as e:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail=e.message,

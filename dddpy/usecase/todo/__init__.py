@@ -28,6 +28,10 @@ from dddpy.usecase.todo.find_todos_usecase import (
     FindTodosUseCase,
     new_find_todos_usecase,
 )
+from dddpy.usecase.todo.set_dependencies_usecase import (
+    SetDependenciesUseCase,
+    new_set_dependencies_usecase,
+)
 
 __all__ = [
     'CreateTodoUseCase',
@@ -37,6 +41,7 @@ __all__ = [
     'DeleteTodoUseCase',
     'FindTodoByIdUseCase',
     'FindTodosUseCase',
+    'SetDependenciesUseCase',
     'new_create_todo_usecase',
     'new_start_todo_usecase',
     'new_complete_todo_usecase',
@@ -44,4 +49,5 @@ __all__ = [
     'new_delete_todo_usecase',
     'new_find_todo_by_id_usecase',
     'new_find_todos_usecase',
+    'new_set_dependencies_usecase',
 ]
