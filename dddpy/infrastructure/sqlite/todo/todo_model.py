@@ -19,7 +19,7 @@ from dddpy.domain.todo.value_objects import (
 from dddpy.infrastructure.sqlite.database import Base
 
 
-class TodoDTO(Base):
+class TodoModel(Base):
     """Data Transfer Object for Todo entity in SQLite database."""
 
     __tablename__ = 'todo'
@@ -71,7 +71,7 @@ class TodoDTO(Base):
         )
 
     @staticmethod
-    def from_entity(todo: Todo) -> 'TodoDTO':
+    def from_entity(todo: Todo) -> 'TodoModel':
         """Convert domain entity to DTO."""
         # Convert dependencies to JSON
         dependencies_json = None
@@ -79,7 +79,7 @@ class TodoDTO(Base):
             dep_uuids = [str(dep_id.value) for dep_id in todo.dependencies.values]
             dependencies_json = json.dumps(dep_uuids) if dep_uuids else None
 
-        return TodoDTO(
+        return TodoModel(
             id=todo.id.value,
             title=todo.title.value,
             description=todo.description.value if todo.description else None,

@@ -9,7 +9,7 @@ from sqlalchemy.orm.session import Session
 from dddpy.domain.todo.entities import Todo
 from dddpy.domain.todo.repositories import TodoRepository
 from dddpy.domain.todo.value_objects import TodoId
-from dddpy.infrastructure.sqlite.todo import TodoDTO
+from dddpy.infrastructure.sqlite.todo import TodoModel
 
 
 class TodoRepositoryImpl(TodoRepository):
@@ -22,7 +22,7 @@ class TodoRepositoryImpl(TodoRepository):
     def find_by_id(self, todo_id: TodoId) -> Optional[Todo]:
         """Find a Todo by its ID."""
         try:
-            row = self.session.query(TodoDTO).filter_by(id=todo_id.value).one()
+            row = self.session.query(TodoModel).filter_by(id=todo_id.value).one()
         except NoResultFound:
             return None
 
@@ -31,8 +31,8 @@ class TodoRepositoryImpl(TodoRepository):
     def find_all(self) -> List[Todo]:
         """Retrieve all Todo items."""
         rows = (
-            self.session.query(TodoDTO)
-            .order_by(desc(TodoDTO.created_at))
+            self.session.query(TodoModel)
+            .order_by(desc(TodoModel.created_at))
             .limit(20)
             .all()
         )
@@ -40,10 +40,10 @@ class TodoRepositoryImpl(TodoRepository):
 
     def save(self, todo: Todo) -> None:
         """Save a new Todo item."""
-        todo_dto = TodoDTO.from_entity(todo)
+        todo_dto = TodoModel.from_entity(todo)
         try:
             existing_todo = (
-                self.session.query(TodoDTO).filter_by(id=todo.id.value).one()
+                self.session.query(TodoModel).filter_by(id=todo.id.value).one()
             )
         except NoResultFound:
             self.session.add(todo_dto)
@@ -58,7 +58,7 @@ class TodoRepositoryImpl(TodoRepository):
 
     def delete(self, todo_id: TodoId) -> None:
         """Delete a Todo item by its ID."""
-        self.session.query(TodoDTO).filter_by(id=todo_id.value).delete()
+        self.session.query(TodoModel).filter_by(id=todo_id.value).delete()
 
 
 def new_todo_repository(session: Session) -> TodoRepository:
