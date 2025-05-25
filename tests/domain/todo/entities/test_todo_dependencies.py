@@ -2,8 +2,10 @@
 
 import pytest
 from uuid import uuid4
+from unittest.mock import Mock
 
 from dddpy.domain.todo.entities import Todo
+from dddpy.domain.todo.services.todo_domain_service import TodoDomainService
 from dddpy.domain.todo.value_objects import (
     TodoDependencies,
     TodoDescription,
@@ -97,21 +99,26 @@ class TestTodoDependencies:
         """Test that Todo without dependencies can always start."""
         todo = Todo.create(TodoTitle('Independent Task'))
 
+        # Mock repository
+        mock_repository = Mock()
+
         # Should be able to start without dependencies
-        assert todo.can_start(lambda _: None)
+        assert TodoDomainService.can_start(todo, mock_repository)
 
     def test_todo_can_start_with_completed_dependencies(self):
         """Test that Todo can start when all dependencies are completed."""
         dep_todo = Todo.create(TodoTitle('Dependency Task'))
+        dep_todo.start()  # Start before completing
         dep_todo.complete()  # Complete the dependency
 
         todo = Todo.create(TodoTitle('Main Task'))
         todo.add_dependency(dep_todo.id)
 
-        def get_todo_by_id(todo_id):
-            return dep_todo if todo_id == dep_todo.id else None
+        # Mock repository
+        mock_repository = Mock()
+        mock_repository.find_by_id.return_value = dep_todo
 
-        assert todo.can_start(get_todo_by_id)
+        assert TodoDomainService.can_start(todo, mock_repository)
 
     def test_todo_cannot_start_with_incomplete_dependencies(self):
         """Test that Todo cannot start when dependencies are incomplete."""
@@ -121,10 +128,11 @@ class TestTodoDependencies:
         todo = Todo.create(TodoTitle('Main Task'))
         todo.add_dependency(dep_todo.id)
 
-        def get_todo_by_id(todo_id):
-            return dep_todo if todo_id == dep_todo.id else None
+        # Mock repository
+        mock_repository = Mock()
+        mock_repository.find_by_id.return_value = dep_todo
 
-        assert not todo.can_start(get_todo_by_id)
+        assert not TodoDomainService.can_start(todo, mock_repository)
 
     def test_todo_cannot_start_with_missing_dependencies(self):
         """Test that Todo cannot start when dependency todos are not found."""
@@ -133,10 +141,11 @@ class TestTodoDependencies:
         todo = Todo.create(TodoTitle('Main Task'))
         todo.add_dependency(missing_id)
 
-        def get_todo_by_id(todo_id):
-            return None  # Simulate missing todo
+        # Mock repository
+        mock_repository = Mock()
+        mock_repository.find_by_id.return_value = None  # Simulate missing todo
 
-        assert not todo.can_start(get_todo_by_id)
+        assert not TodoDomainService.can_start(todo, mock_repository)
 
     def test_todo_can_start_multiple_dependencies(self):
         """Test Todo with multiple dependencies."""
@@ -147,23 +156,30 @@ class TestTodoDependencies:
         todo.add_dependency(dep1.id)
         todo.add_dependency(dep2.id)
 
-        def get_todo_by_id(todo_id):
+        # Mock repository
+        mock_repository = Mock()
+
+        def mock_find_by_id(todo_id):
             if todo_id == dep1.id:
                 return dep1
             elif todo_id == dep2.id:
                 return dep2
             return None
 
+        mock_repository.find_by_id.side_effect = mock_find_by_id
+
         # Neither completed - cannot start
-        assert not todo.can_start(get_todo_by_id)
+        assert not TodoDomainService.can_start(todo, mock_repository)
 
         # One completed - still cannot start
+        dep1.start()  # Start before completing
         dep1.complete()
-        assert not todo.can_start(get_todo_by_id)
+        assert not TodoDomainService.can_start(todo, mock_repository)
 
         # Both completed - can start
+        dep2.start()  # Start before completing
         dep2.complete()
-        assert todo.can_start(get_todo_by_id)
+        assert TodoDomainService.can_start(todo, mock_repository)
 
 
 class TestTodoDependenciesValueObject:

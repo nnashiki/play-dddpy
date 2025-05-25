@@ -11,9 +11,10 @@ from dddpy.domain.todo.value_objects import (
     TodoTitle,
 )
 from dddpy.domain.todo.exceptions import (
-    TodoCircularDependencyError,
     TodoAlreadyCompletedError,
+    TodoAlreadyStartedError,
     TodoNotFoundError,
+    TodoNotStartedError,
 )
 
 
@@ -99,45 +100,12 @@ class Todo:
         self._description = new_description if new_description else None
         self._updated_at = datetime.now()
 
-    def _check_circular_dependency(self, new_dep_id: TodoId, get_todo_by_id) -> bool:
-        """Check if adding new_dep_id would create a circular dependency using DFS"""
-        visited = set()
-
-        def has_path_to_self(current_id: TodoId) -> bool:
-            if current_id == self._id:
-                return True
-            if current_id in visited:
-                return False
-
-            visited.add(current_id)
-
-            try:
-                current_todo = get_todo_by_id(current_id)
-                for dep_id in current_todo.dependencies.values:
-                    if has_path_to_self(dep_id):
-                        return True
-            except Exception:
-                # If dependency todo is not found, ignore it
-                pass
-
-            return False
-
-        return has_path_to_self(new_dep_id)
-
-    def add_dependency(self, dep_id: TodoId, get_todo_by_id=None) -> None:
+    def add_dependency(self, dep_id: TodoId) -> None:
         """Add a dependency to this Todo"""
         if dep_id == self._id:
             raise ValueError('Cannot add self as dependency')
-
         if self._dependencies.contains(dep_id):
             return  # Already exists, no need to add
-
-        # Check for circular dependency if get_todo_by_id is provided
-        if get_todo_by_id and self._check_circular_dependency(dep_id, get_todo_by_id):
-            raise TodoCircularDependencyError(
-                f'Adding dependency {dep_id.value} would create a circular dependency'
-            )
-
         self._dependencies = self._dependencies.add(dep_id)
         self._updated_at = datetime.now()
 
@@ -146,49 +114,17 @@ class Todo:
         self._dependencies = self._dependencies.remove(dep_id)
         self._updated_at = datetime.now()
 
-    def set_dependencies(
-        self, dependencies: TodoDependencies, get_todo_by_id=None
-    ) -> None:
+    def set_dependencies(self, dependencies: TodoDependencies) -> None:
         """Set the Todo's dependencies"""
-        # Self-dependency check is now handled in TodoDependencies.from_list()
-        # But we still need to check here in case someone creates TodoDependencies directly
         if dependencies.contains(self._id):
             raise ValueError('Cannot add self as dependency')
-
-        # Check for circular dependencies if get_todo_by_id is provided
-        if get_todo_by_id:
-            for dep_id in dependencies.values:
-                if self._check_circular_dependency(dep_id, get_todo_by_id):
-                    raise TodoCircularDependencyError(
-                        f'Setting dependency {dep_id.value} would create a circular dependency'
-                    )
-
         self._dependencies = dependencies
         self._updated_at = datetime.now()
 
-    def can_start(self, get_todo_by_id) -> bool:
-        """Check if this Todo can be started (all dependencies are completed)"""
-        if self._dependencies.is_empty():
-            return True
-
-        # Check if all dependencies are completed
-        for dep_id in self._dependencies.values:
-            try:
-                dep_todo = get_todo_by_id(dep_id)
-                if dep_todo is None or not dep_todo.is_completed:
-                    return False
-            except TodoNotFoundError:
-                # If dependency todo is not found, consider it as not completed
-                return False
-            except Exception:
-                # For any other unexpected exceptions, re-raise them
-                # Don't hide potential system errors
-                raise
-
-        return True
-
     def start(self) -> None:
         """Change the Todo's status to in progress"""
+        if self._status != TodoStatus.NOT_STARTED:
+            raise TodoAlreadyStartedError()
         self._status = TodoStatus.IN_PROGRESS
         self._updated_at = datetime.now()
 
@@ -196,6 +132,8 @@ class Todo:
         """Change the Todo's status to completed"""
         if self._status == TodoStatus.COMPLETED:
             raise TodoAlreadyCompletedError()
+        if self._status != TodoStatus.IN_PROGRESS:
+            raise TodoNotStartedError()
 
         self._status = TodoStatus.COMPLETED
         self._completed_at = datetime.now()

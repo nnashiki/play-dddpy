@@ -4,12 +4,11 @@ from abc import ABC, abstractmethod
 
 from dddpy.domain.todo.entities import Todo
 from dddpy.domain.todo.exceptions import (
-    TodoAlreadyCompletedError,
-    TodoAlreadyStartedError,
     TodoDependencyNotCompletedError,
     TodoNotFoundError,
 )
 from dddpy.domain.todo.repositories import TodoRepository
+from dddpy.domain.todo.services.todo_domain_service import TodoDomainService
 from dddpy.domain.todo.value_objects import TodoId, TodoStatus
 
 
@@ -34,18 +33,13 @@ class StartTodoUseCaseImpl(StartTodoUseCase):
         if todo is None:
             raise TodoNotFoundError
 
-        if todo.is_completed:
-            raise TodoAlreadyCompletedError
-
-        if todo.status == TodoStatus.IN_PROGRESS:
-            raise TodoAlreadyStartedError
-
         # Check if dependencies are satisfied
-        if not todo.can_start(self.todo_repository.find_by_id):
+        if not TodoDomainService.can_start(todo, self.todo_repository):
             raise TodoDependencyNotCompletedError(
                 'Cannot start todo because dependencies are not completed'
             )
 
+        # Entity will enforce state transition rules
         todo.start()
         self.todo_repository.save(todo)
         return todo

@@ -4,8 +4,9 @@ from abc import ABC, abstractmethod
 from typing import Optional, List
 
 from dddpy.domain.todo.entities import Todo
-from dddpy.domain.todo.exceptions import TodoNotFoundError
+from dddpy.domain.todo.exceptions import TodoNotFoundError, TodoCircularDependencyError
 from dddpy.domain.todo.repositories import TodoRepository
+from dddpy.domain.todo.services.todo_domain_service import TodoDomainService
 from dddpy.domain.todo.value_objects import (
     TodoDependencies,
     TodoDescription,
@@ -52,10 +53,18 @@ class UpdateTodoUseCaseImpl(UpdateTodoUseCase):
         if description is not None:
             todo.update_description(description)
         if dependencies is not None:
+            # Check that all dependencies exist
+            TodoDomainService.validate_dependencies_exist(
+                dependencies, self.todo_repository
+            )
+
             todo_dependencies = TodoDependencies.from_list(
                 dependencies, self_id=todo_id
             )
-            # Note: We could add circular dependency checking here by passing a get_todo_by_id function
+            # Check for circular dependencies before setting
+            TodoDomainService.validate_no_circular_dependency(
+                todo, dependencies, self.todo_repository
+            )
             todo.set_dependencies(todo_dependencies)
 
         self.todo_repository.save(todo)

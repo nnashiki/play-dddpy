@@ -17,6 +17,7 @@ class TestStartTodoUseCaseWithDependencies:
         """Test starting a todo when all dependencies are completed."""
         # Create a completed dependency todo
         dep_todo = Todo.create(TodoTitle('Dependency Task'))
+        dep_todo.start()  # Start before completing
         dep_todo.complete()
 
         # Create main todo with dependency

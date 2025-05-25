@@ -8,7 +8,9 @@ from fastapi import Depends, FastAPI, HTTPException, status
 from dddpy.domain.todo.exceptions import (
     TodoAlreadyCompletedError,
     TodoAlreadyStartedError,
+    TodoCircularDependencyError,
     TodoDependencyNotCompletedError,
+    TodoDependencyNotFoundError,
     TodoNotFoundError,
 )
 from dddpy.domain.todo.value_objects import TodoDescription, TodoId, TodoTitle
@@ -21,6 +23,7 @@ from dddpy.infrastructure.di.injection import (
     get_update_todo_usecase,
 )
 from dddpy.presentation.api.todo.error_messages import (
+    ErrorMessageTodoDependencyNotFound,
     ErrorMessageTodoNotFound,
     TodoDependencyNotCompletedErrorMessage,
 )
@@ -94,7 +97,9 @@ class TodoApiRouteHandler:
             response_model=TodoSchema,
             status_code=201,
             responses={
-                status.HTTP_400_BAD_REQUEST: {},
+                status.HTTP_400_BAD_REQUEST: {
+                    'model': ErrorMessageTodoDependencyNotFound,
+                },
             },
         )
         def create_todo(
@@ -120,6 +125,16 @@ class TodoApiRouteHandler:
 
             try:
                 todo = usecase.execute(title, description, dependencies)
+            except TodoDependencyNotFoundError as e:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=e.message,
+                ) from e
+            except TodoCircularDependencyError as e:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=e.message,
+                ) from e
             except Exception as e:
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -134,6 +149,9 @@ class TodoApiRouteHandler:
             responses={
                 status.HTTP_404_NOT_FOUND: {
                     'model': ErrorMessageTodoNotFound,
+                },
+                status.HTTP_400_BAD_REQUEST: {
+                    'model': ErrorMessageTodoDependencyNotFound,
                 },
             },
         )
@@ -166,6 +184,16 @@ class TodoApiRouteHandler:
             except TodoNotFoundError as e:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
+                    detail=e.message,
+                ) from e
+            except TodoDependencyNotFoundError as e:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=e.message,
+                ) from e
+            except TodoCircularDependencyError as e:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
                     detail=e.message,
                 ) from e
             except Exception as e:
