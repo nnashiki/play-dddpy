@@ -5,6 +5,11 @@ from datetime import datetime, timedelta
 import pytest
 
 from dddpy.domain.todo.entities.todo import Todo
+from dddpy.domain.todo.exceptions import (
+    TodoAlreadyCompletedError,
+    TodoAlreadyStartedError,
+    TodoNotStartedError,
+)
 from dddpy.domain.todo.value_objects import (
     TodoDescription,
     TodoId,
@@ -99,6 +104,7 @@ def test_start_todo():
 def test_complete_todo():
     """Test completing a Todo."""
     todo = Todo.create(TodoTitle('Test Todo'))
+    todo.start()  # Need to start before completing
 
     todo.complete()
 
@@ -111,9 +117,10 @@ def test_complete_todo():
 def test_complete_already_completed_todo():
     """Test attempting to complete an already completed Todo."""
     todo = Todo.create(TodoTitle('Test Todo'))
+    todo.start()  # Need to start before completing
     todo.complete()
 
-    with pytest.raises(ValueError, match='Already completed'):
+    with pytest.raises(TodoAlreadyCompletedError):
         todo.complete()
 
 
@@ -138,6 +145,7 @@ def test_is_overdue():
     assert todo.is_overdue(deadline, current_time)
 
     # Test case 3: Completed todo should never be overdue, even if completed after deadline
+    todo.start()  # Need to start before completing
     todo.complete()
     assert not todo.is_overdue(deadline, current_time)
 
@@ -148,6 +156,7 @@ def test_is_overdue():
         created_at=created_at,
         updated_at=created_at,
     )
+    todo.start()  # Need to start before completing
     todo.complete()
     assert not todo.is_overdue(deadline, current_time)
 
@@ -171,3 +180,30 @@ def test_todo_equality():
     assert todo1 != todo2  # Different IDs
     assert todo3 == todo4  # Same ID, different titles
     assert todo1 != 'not a todo'  # Different type
+
+
+def test_start_already_started_todo_should_raise_error():
+    """Test that starting an already started Todo raises TodoAlreadyStartedError."""
+    todo = Todo.create(TodoTitle('Test Todo'))
+    todo.start()
+
+    with pytest.raises(TodoAlreadyStartedError):
+        todo.start()
+
+
+def test_start_completed_todo_should_raise_error():
+    """Test that starting a completed Todo raises TodoAlreadyStartedError."""
+    todo = Todo.create(TodoTitle('Test Todo'))
+    todo.start()
+    todo.complete()
+
+    with pytest.raises(TodoAlreadyStartedError):
+        todo.start()
+
+
+def test_complete_not_started_todo_should_raise_error():
+    """Test that completing a not started Todo raises TodoNotStartedError."""
+    todo = Todo.create(TodoTitle('Test Todo'))
+
+    with pytest.raises(TodoNotStartedError):
+        todo.complete()

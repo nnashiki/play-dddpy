@@ -61,10 +61,11 @@ def test_start_todo_not_found(start_todo_usecase, todo_repository_mock):
 def test_start_completed_todo(start_todo_usecase, todo_repository_mock, todo):
     """Test starting a completed Todo."""
     # Arrange
+    todo.start()  # Start the todo first
     todo.complete()  # Make the todo completed
     todo_repository_mock.find_by_id.return_value = todo
 
     # Act & Assert
     with pytest.raises(Exception) as exc_info:
         start_todo_usecase.execute(todo.id)
-    assert 'The Todo is already completed' in str(exc_info.value)
+    assert 'The Todo is already started' in str(exc_info.value)

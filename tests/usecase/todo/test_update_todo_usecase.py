@@ -5,6 +5,7 @@ from unittest.mock import Mock, patch
 import pytest
 
 from dddpy.domain.todo.entities import Todo
+from dddpy.domain.todo.exceptions import TodoCircularDependencyError
 from dddpy.domain.todo.repositories import TodoRepository
 from dddpy.domain.todo.value_objects import TodoDescription, TodoId, TodoTitle
 from dddpy.usecase.todo.update_todo_usecase import UpdateTodoUseCaseImpl
@@ -94,3 +95,55 @@ def test_update_todo_not_found(update_todo_usecase, todo_repository_mock):
     with pytest.raises(Exception) as exc_info:
         update_todo_usecase.execute(todo_id, title=new_title)
     assert 'The Todo you specified does not exist' in str(exc_info.value)
+
+
+def test_update_todo_dependencies(update_todo_usecase, todo_repository_mock, todo):
+    """Test updating a Todo's dependencies."""
+    # Arrange
+    dep_id1 = TodoId.generate()
+    dep_id2 = TodoId.generate()
+    dependencies = [dep_id1, dep_id2]
+
+    # Create mock dependency todos with empty dependencies
+    dep_todo1 = Todo.create(TodoTitle('Dependency 1'))
+    dep_todo2 = Todo.create(TodoTitle('Dependency 2'))
+
+    todo_repository_mock.find_by_id.side_effect = lambda todo_id: (
+        todo
+        if todo_id == todo.id
+        else dep_todo1
+        if todo_id == dep_id1
+        else dep_todo2
+        if todo_id == dep_id2
+        else None
+    )
+
+    # Act
+    result = update_todo_usecase.execute(todo.id, dependencies=dependencies)
+
+    # Assert
+    assert result.dependencies.contains(dep_id1)
+    assert result.dependencies.contains(dep_id2)
+    assert result.dependencies.size() == 2
+    todo_repository_mock.save.assert_called_once_with(result)
+
+
+def test_update_todo_dependencies_circular_error(
+    update_todo_usecase, todo_repository_mock, todo
+):
+    """Test updating a Todo's dependencies with circular dependency."""
+    # Arrange
+    dep_todo = Todo.create(TodoTitle('Dependency Todo'))
+    dep_todo.add_dependency(todo.id)  # dep_todo depends on todo
+
+    # Mock repository to return the circular dependency
+    todo_repository_mock.find_by_id.side_effect = lambda todo_id: (
+        todo if todo_id == todo.id else dep_todo if todo_id == dep_todo.id else None
+    )
+
+    # Act & Assert - try to make todo depend on dep_todo (circular)
+    with pytest.raises(TodoCircularDependencyError):
+        update_todo_usecase.execute(todo.id, dependencies=[dep_todo.id])
+
+    # Verify save was not called
+    todo_repository_mock.save.assert_not_called()

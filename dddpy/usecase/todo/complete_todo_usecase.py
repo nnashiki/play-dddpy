@@ -4,12 +4,10 @@ from abc import ABC, abstractmethod
 
 from dddpy.domain.todo.entities import Todo
 from dddpy.domain.todo.exceptions import (
-    TodoAlreadyCompletedError,
     TodoNotFoundError,
-    TodoNotStartedError,
 )
 from dddpy.domain.todo.repositories import TodoRepository
-from dddpy.domain.todo.value_objects import TodoId, TodoStatus
+from dddpy.domain.todo.value_objects import TodoId
 
 
 class CompleteTodoUseCase(ABC):
@@ -33,12 +31,7 @@ class CompleteTodoUseCaseImpl(CompleteTodoUseCase):
         if todo is None:
             raise TodoNotFoundError
 
-        if todo.status == TodoStatus.NOT_STARTED:
-            raise TodoNotStartedError
-
-        if todo.is_completed:
-            raise TodoAlreadyCompletedError
-
+        # Entity will enforce state transition rules
         todo.complete()
         self.todo_repository.save(todo)
         return todo

@@ -4,6 +4,12 @@ from dddpy.presentation.api.todo.error_messages.todo_already_completed_error_mes
 from dddpy.presentation.api.todo.error_messages.todo_already_started_error_message import (
     ErrorMessageTodoAlreadyStarted,
 )
+from dddpy.presentation.api.todo.error_messages.todo_dependency_not_completed_error_message import (
+    TodoDependencyNotCompletedErrorMessage,
+)
+from dddpy.presentation.api.todo.error_messages.todo_dependency_not_found_error_message import (
+    ErrorMessageTodoDependencyNotFound,
+)
 from dddpy.presentation.api.todo.error_messages.todo_not_found_error_message import (
     ErrorMessageTodoNotFound,
 )
@@ -16,4 +22,6 @@ __all__ = [
     'ErrorMessageTodoAlreadyStarted',
     'ErrorMessageTodoNotFound',
     'ErrorMessageTodoNotStarted',
+    'TodoDependencyNotCompletedErrorMessage',
+    'ErrorMessageTodoDependencyNotFound',
 ]

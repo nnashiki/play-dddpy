@@ -52,6 +52,7 @@ class TodoRepositoryImpl(TodoRepository):
             existing_todo.title = todo_dto.title
             existing_todo.description = todo_dto.description
             existing_todo.status = todo_dto.status
+            existing_todo.dependencies = todo_dto.dependencies
             existing_todo.updated_at = todo_dto.updated_at
             existing_todo.completed_at = todo_dto.completed_at
 
