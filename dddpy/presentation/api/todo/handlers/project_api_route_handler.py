@@ -10,19 +10,18 @@ from dddpy.domain.project.exceptions import (
     ProjectNotFoundError,
     ProjectDeletionNotAllowedError,
 )
-from dddpy.domain.project.services import ProjectDomainService
-from dddpy.domain.project.value_objects import ProjectId
+
 from dddpy.domain.todo.exceptions import (
     TodoCircularDependencyError,
     TodoDependencyNotFoundError,
 )
 from dddpy.infrastructure.di.injection import (
-    get_project_repository,
     get_create_project_usecase,
     get_add_todo_to_project_usecase,
     get_find_projects_usecase,
+    get_delete_project_usecase,
 )
-from dddpy.domain.project.repositories import ProjectRepository
+
 from dddpy.presentation.api.project.schemas import (
     ProjectCreateSchema,
     ProjectSchema,
@@ -32,6 +31,7 @@ from dddpy.usecase.project import (
     CreateProjectUseCase,
     AddTodoToProjectUseCase,
     FindProjectsUseCase,
+    DeleteProjectUseCase,
 )
 
 
@@ -90,23 +90,24 @@ class ProjectApiRouteHandler:
         )
         def delete_project(                          # pylint: disable=unused-variable
             project_id: UUID,
-            repository: ProjectRepository = Depends(get_project_repository),
+            usecase: DeleteProjectUseCase = Depends(get_delete_project_usecase),
         ):
-            _id = ProjectId(project_id)
-            project = repository.find_by_id(_id)
-            if project is None:
+            try:
+                usecase.execute(str(project_id))
+            except ProjectNotFoundError as exc:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail=ProjectNotFoundError.message,
-                )
-
-            if not ProjectDomainService.can_delete_project(project):
+                    detail=exc.message,
+                ) from exc
+            except ProjectDeletionNotAllowedError as exc:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=ProjectDeletionNotAllowedError().message,
-                )
-
-            repository.delete(_id)
+                    detail=exc.message,
+                ) from exc
+            except Exception as exc:                 # pragma: no cover
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                ) from exc
 
         # ------------------------------------------------------------------ #
         #  POST /projects/{project_id}/todos – add Todo                       #

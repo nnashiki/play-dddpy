@@ -16,13 +16,12 @@ from dddpy.domain.todo.exceptions import (
     TodoNotFoundError,
     TodoNotStartedError,
 )
-from dddpy.domain.project.repositories import ProjectRepository
 from dddpy.infrastructure.di.injection import (
-    get_project_repository,
     get_start_todo_usecase,
     get_complete_todo_usecase,
     get_update_todo_usecase,
     get_find_todo_usecase,
+    get_find_projects_usecase,
 )
 from dddpy.presentation.api.todo.error_messages import (
     ErrorMessageTodoNotFound,
@@ -36,6 +35,7 @@ from dddpy.usecase.project import (
     StartTodoThroughProjectUseCase,
     CompleteTodoThroughProjectUseCase,
     UpdateTodoThroughProjectUseCase,
+    FindProjectsUseCase,
 )
 from dddpy.usecase.todo.find_todo_usecase import FindTodoThroughProjectUseCase
 
@@ -49,12 +49,12 @@ class TodoApiRouteHandler:
         # ------------------------------------------------------------------ #
         @app.get('/todos', response_model=List[TodoSchema], status_code=200)
         def get_todos(                             # pylint: disable=unused-variable
-            project_repository: ProjectRepository = Depends(get_project_repository),
+            usecase: FindProjectsUseCase = Depends(get_find_projects_usecase),
         ):
             try:
-                projects = project_repository.find_all()
-                todos = [todo for project in projects for todo in project.todos]
-                return [TodoSchema.from_entity(todo) for todo in todos]
+                project_outputs = usecase.execute()
+                todos = [todo for project in project_outputs for todo in project.todos]
+                return [TodoSchema.from_dto(todo) for todo in todos]
             except Exception as exc:               # pragma: no cover
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
