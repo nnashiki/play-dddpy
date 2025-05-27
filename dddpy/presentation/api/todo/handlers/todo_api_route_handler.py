@@ -1,9 +1,11 @@
-"""Controller for handling Todo-related HTTP requests."""
+"""HTTP routes for Todo operations (project-aggregate aware)."""
 
 from typing import List
 from uuid import UUID
 
 from fastapi import Depends, FastAPI, HTTPException, status
+
+from dddpy.dto.todo import TodoUpdateDto
 
 from dddpy.domain.todo.exceptions import (
     TodoAlreadyCompletedError,
@@ -12,274 +14,178 @@ from dddpy.domain.todo.exceptions import (
     TodoDependencyNotCompletedError,
     TodoDependencyNotFoundError,
     TodoNotFoundError,
+    TodoNotStartedError,
 )
-from dddpy.domain.todo.value_objects import TodoDescription, TodoId, TodoTitle
+from dddpy.domain.project.repositories import ProjectRepository
 from dddpy.infrastructure.di.injection import (
-    get_complete_todo_usecase,
-    get_create_todo_usecase,
-    get_find_todo_by_id_usecase,
-    get_find_todos_usecase,
+    get_project_repository,
     get_start_todo_usecase,
+    get_complete_todo_usecase,
     get_update_todo_usecase,
+    get_find_todo_usecase,
 )
 from dddpy.presentation.api.todo.error_messages import (
-    ErrorMessageTodoDependencyNotFound,
     ErrorMessageTodoNotFound,
     TodoDependencyNotCompletedErrorMessage,
 )
 from dddpy.presentation.api.todo.schemas import (
-    TodoCreateSchema,
     TodoSchema,
     TodoUpdateSchema,
 )
-from dddpy.usecase.todo import (
-    CompleteTodoUseCase,
-    CreateTodoUseCase,
-    FindTodoByIdUseCase,
-    FindTodosUseCase,
-    StartTodoUseCase,
-    UpdateTodoUseCase,
+from dddpy.usecase.project import (
+    StartTodoThroughProjectUseCase,
+    CompleteTodoThroughProjectUseCase,
+    UpdateTodoThroughProjectUseCase,
 )
+from dddpy.usecase.todo.find_todo_usecase import FindTodoThroughProjectUseCase
 
 
 class TodoApiRouteHandler:
-    """Handler class for handling Todo-related HTTP endpoints."""
+    """Registers Todo-related endpoints."""
 
-    def register_routes(self, app: FastAPI):
-        """Register Todo-related routes to the FastAPI application."""
-
-        @app.get(
-            '/todos',
-            response_model=List[TodoSchema],
-            status_code=200,
-        )
-        def get_todos(
-            usecase: FindTodosUseCase = Depends(get_find_todos_usecase),
+    def register_routes(self, app: FastAPI) -> None:  # noqa: D401
+        # ------------------------------------------------------------------ #
+        #  GET /todos  – list all todos                                       #
+        # ------------------------------------------------------------------ #
+        @app.get('/todos', response_model=List[TodoSchema], status_code=200)
+        def get_todos(                             # pylint: disable=unused-variable
+            project_repository: ProjectRepository = Depends(get_project_repository),
         ):
             try:
-                data = usecase.execute()
-                return [TodoSchema.from_entity(todo) for todo in data]
-            except Exception as e:
+                projects = project_repository.find_all()
+                todos = [todo for project in projects for todo in project.todos]
+                return [TodoSchema.from_entity(todo) for todo in todos]
+            except Exception as exc:               # pragma: no cover
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                ) from e
+                ) from exc
 
+        # ------------------------------------------------------------------ #
+        #  GET /todos/{todo_id} – retrieve a single todo                      #
+        # ------------------------------------------------------------------ #
         @app.get(
             '/todos/{todo_id}',
             response_model=TodoSchema,
             status_code=200,
-            responses={
-                status.HTTP_404_NOT_FOUND: {
-                    'model': ErrorMessageTodoNotFound,
-                },
-            },
+            responses={status.HTTP_404_NOT_FOUND: {'model': ErrorMessageTodoNotFound}},
         )
-        def get_todo(
+        def get_todo(                              # pylint: disable=unused-variable
             todo_id: UUID,
-            usecase: FindTodoByIdUseCase = Depends(get_find_todo_by_id_usecase),
+            usecase: FindTodoThroughProjectUseCase = Depends(get_find_todo_usecase),
         ):
-            uuid = TodoId(todo_id)
             try:
-                todo = usecase.execute(uuid)
-            except TodoNotFoundError as e:
+                output = usecase.execute(str(todo_id))
+                return TodoSchema.from_dto(output)
+            except TodoNotFoundError as exc:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail=e.message,
-                ) from e
-            except Exception as exc:
+                    detail=exc.message,
+                ) from exc
+            except Exception as exc:               # pragma: no cover
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 ) from exc
-            return TodoSchema.from_entity(todo)
 
-        @app.post(
-            '/todos',
-            response_model=TodoSchema,
-            status_code=201,
-            responses={
-                status.HTTP_400_BAD_REQUEST: {
-                    'model': ErrorMessageTodoDependencyNotFound,
-                },
-            },
-        )
-        def create_todo(
-            data: TodoCreateSchema,
-            usecase: CreateTodoUseCase = Depends(get_create_todo_usecase),
-        ):
-            try:
-                title = TodoTitle(data.title)
-                description = (
-                    TodoDescription(data.description) if data.description else None
-                )
-                # Convert dependencies from string UUIDs to TodoId objects
-                dependencies = None
-                if data.dependencies:
-                    dependencies = [
-                        TodoId(UUID(dep_id)) for dep_id in data.dependencies
-                    ]
-            except ValueError as e:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=str(e),
-                ) from e
-
-            try:
-                todo = usecase.execute(title, description, dependencies)
-            except TodoDependencyNotFoundError as e:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=e.message,
-                ) from e
-            except TodoCircularDependencyError as e:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=e.message,
-                ) from e
-            except Exception as e:
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                ) from e
-
-            return TodoSchema.from_entity(todo)
-
+        # ------------------------------------------------------------------ #
+        #  PUT /todos/{todo_id} – update                                      #
+        # ------------------------------------------------------------------ #
         @app.put(
             '/todos/{todo_id}',
             response_model=TodoSchema,
             status_code=200,
             responses={
-                status.HTTP_404_NOT_FOUND: {
-                    'model': ErrorMessageTodoNotFound,
-                },
-                status.HTTP_400_BAD_REQUEST: {
-                    'model': ErrorMessageTodoDependencyNotFound,
-                },
+                status.HTTP_404_NOT_FOUND: {'model': ErrorMessageTodoNotFound},
             },
         )
-        def update_todo(
+        def update_todo(                           # pylint: disable=unused-variable
             todo_id: UUID,
             data: TodoUpdateSchema,
-            usecase: UpdateTodoUseCase = Depends(get_update_todo_usecase),
+            usecase: UpdateTodoThroughProjectUseCase = Depends(get_update_todo_usecase),
         ):
-            _id = TodoId(todo_id)
-
+            dto = TodoUpdateDto(
+                title=data.title,
+                description=data.description,
+                dependencies=data.dependencies,
+            )
             try:
-                title = TodoTitle(data.title)
-                description = (
-                    TodoDescription(data.description) if data.description else None
-                )
-                # Convert dependencies from string UUIDs to TodoId objects
-                dependencies = None
-                if data.dependencies:
-                    dependencies = [
-                        TodoId(UUID(dep_id)) for dep_id in data.dependencies
-                    ]
-            except ValueError as e:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=str(e),
-                ) from e
-
-            try:
-                todo = usecase.execute(_id, title, description, dependencies)
-            except TodoNotFoundError as e:
+                todo_output = usecase.execute(str(todo_id), dto)
+                return TodoSchema.from_dto(todo_output)
+            except TodoNotFoundError as exc:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail=e.message,
-                ) from e
-            except TodoDependencyNotFoundError as e:
+                    detail=exc.message,
+                ) from exc
+            except (TodoDependencyNotFoundError, TodoCircularDependencyError) as exc:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=e.message,
-                ) from e
-            except TodoCircularDependencyError as e:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=e.message,
-                ) from e
-            except Exception as e:
+                    detail=str(exc),
+                ) from exc
+            except Exception as exc:               # pragma: no cover
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                ) from e
+                ) from exc
 
-            return TodoSchema.from_entity(todo)
-
+        # ------------------------------------------------------------------ #
+        #  PATCH /todos/{todo_id}/start – start                               #
+        # ------------------------------------------------------------------ #
         @app.patch(
             '/todos/{todo_id}/start',
             response_model=TodoSchema,
             status_code=200,
             responses={
-                status.HTTP_404_NOT_FOUND: {
-                    'model': ErrorMessageTodoNotFound,
-                },
-                status.HTTP_400_BAD_REQUEST: {
-                    'model': TodoDependencyNotCompletedErrorMessage,
-                },
+                status.HTTP_404_NOT_FOUND: {'model': ErrorMessageTodoNotFound},
+                status.HTTP_400_BAD_REQUEST: {'model': TodoDependencyNotCompletedErrorMessage},
             },
         )
-        def start_todo(
+        def start_todo(                           # pylint: disable=unused-variable
             todo_id: UUID,
-            usecase: StartTodoUseCase = Depends(get_start_todo_usecase),
+            usecase: StartTodoThroughProjectUseCase = Depends(get_start_todo_usecase),
         ):
-            _id = TodoId(todo_id)
             try:
-                todo = usecase.execute(_id)
-            except TodoNotFoundError as e:
+                todo_output = usecase.execute(str(todo_id))
+                return TodoSchema.from_dto(todo_output)
+            except TodoNotFoundError as exc:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail=e.message,
-                ) from e
-            except TodoAlreadyStartedError as e:
+                    detail=exc.message,
+                ) from exc
+            except (TodoAlreadyStartedError, TodoDependencyNotCompletedError) as exc:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=e.message,
-                ) from e
-            except TodoDependencyNotCompletedError as e:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=e.message,
-                ) from e
-            except Exception as e:
+                    detail=str(exc),
+                ) from exc
+            except Exception as exc:              # pragma: no cover
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                ) from e
+                ) from exc
 
-            return TodoSchema.from_entity(todo)
-
+        # ------------------------------------------------------------------ #
+        #  PATCH /todos/{todo_id}/complete – complete                         #
+        # ------------------------------------------------------------------ #
         @app.patch(
             '/todos/{todo_id}/complete',
             response_model=TodoSchema,
             status_code=200,
-            responses={
-                status.HTTP_404_NOT_FOUND: {
-                    'model': ErrorMessageTodoNotFound,
-                },
-            },
+            responses={status.HTTP_404_NOT_FOUND: {'model': ErrorMessageTodoNotFound}},
         )
-        def complete_todo(
+        def complete_todo(                        # pylint: disable=unused-variable
             todo_id: UUID,
-            usecase: CompleteTodoUseCase = Depends(get_complete_todo_usecase),
+            usecase: CompleteTodoThroughProjectUseCase = Depends(get_complete_todo_usecase),
         ):
-            _id = TodoId(todo_id)
             try:
-                todo = usecase.execute(_id)
-            except TodoNotFoundError as e:
+                todo_output = usecase.execute(str(todo_id))
+                return TodoSchema.from_dto(todo_output)
+            except TodoNotFoundError as exc:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail=e.message,
-                ) from e
-            except TodoAlreadyStartedError as e:
+                    detail=exc.message,
+                ) from exc
+            except (TodoNotStartedError, TodoAlreadyCompletedError) as exc:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=e.message,
-                ) from e
-            except TodoAlreadyCompletedError as e:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=e.message,
-                ) from e
-            except Exception as e:
+                    detail=str(exc),
+                ) from exc
+            except Exception as exc:              # pragma: no cover
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                ) from e
-
-            return TodoSchema.from_entity(todo)
+                ) from exc

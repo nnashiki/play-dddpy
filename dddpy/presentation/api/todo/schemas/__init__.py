@@ -1,5 +1,3 @@
-from .todo_create_schema import TodoCreateSchema
-from .todo_schema import TodoSchema
-from .todo_update_schema import TodoUpdateSchema
+from .todo_schema import TodoSchema, TodoCreateSchema, TodoUpdateSchema
 
 __all__ = ['TodoCreateSchema', 'TodoSchema', 'TodoUpdateSchema']

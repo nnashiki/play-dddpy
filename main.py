@@ -10,6 +10,9 @@ from dddpy.infrastructure.sqlite.database import create_tables, engine
 from dddpy.presentation.api.todo.handlers.todo_api_route_handler import (
     TodoApiRouteHandler,
 )
+from dddpy.presentation.api.project.handlers.project_api_route_handler import (
+    ProjectApiRouteHandler,
+)
 
 config.fileConfig('logging.conf', disable_existing_loggers=False)
 logger = logging.getLogger(__name__)
@@ -32,3 +35,6 @@ app = FastAPI(
 
 todo_route_handler = TodoApiRouteHandler()
 todo_route_handler.register_routes(app)
+
+project_route_handler = ProjectApiRouteHandler()
+project_route_handler.register_routes(app)

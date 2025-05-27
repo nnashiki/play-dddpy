@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Set, Optional
 
 from .todo_id import TodoId
+from ..exceptions import SelfDependencyError, TooManyDependenciesError
 
 
 @dataclass(frozen=True)
@@ -15,7 +16,7 @@ class TodoDependencies:
     def __post_init__(self) -> None:
         """Validate the dependencies after initialization"""
         if len(self.values) > 100:  # Maximum 100 dependencies
-            raise ValueError('Too many dependencies. Maximum 100 dependencies allowed.')
+            raise TooManyDependenciesError()
 
     @staticmethod
     def empty() -> 'TodoDependencies':
@@ -38,7 +39,7 @@ class TodoDependencies:
         todo_id_set = set(todo_ids)
 
         if self_id and self_id in todo_id_set:
-            raise ValueError(f'Cannot add self ({self_id.value}) as dependency')
+            raise SelfDependencyError()
 
         return TodoDependencies(todo_id_set)
 

@@ -6,6 +6,8 @@
 
 **注意**: このリポジトリは「PythonのWebアプリケーションでDDDアーキテクチャを実装する方法」を説明するためのサンプルです。参考として使用する場合は、本番環境にデプロイする前に認証とセキュリティの実装を追加してください。
 
+**🚀 新機能**: Project Aggregate を導入し、複数のTodoを管理する新しいアーキテクチャを実装しました。依存関係管理がより堅牢になり、DDDの集約パターンを適用しています。
+
 * DeepWiki powered by Devin: <https://deepwiki.com/iktakahiro/dddpy>
 * ブログ記事: [Python DDD オニオンアーキテクチャ](https://iktakahiro.dev/python-ddd-onion-architecture)
 
@@ -83,17 +85,66 @@ make dev
 
 ### ドメイン層
 
-ドメイン層には、コアとなるビジネスロジックとルールが含まれています。主に以下の要素で構成されています：
+ドメイン層には、コアとなるビジネスロジックとルールが含まれています。このプロジェクトでは **Project Aggregate パターン** を採用し、より堅牢な依存関係管理を実現しています。
 
-1. エンティティ
-2. 値オブジェクト
-3. リポジトリインターフェース
+主に以下の要素で構成されています：
+
+1. **Project Aggregate Root** - 新機能
+2. **Todo Entity** - Project内で管理される
+3. 値オブジェクト
+4. リポジトリインターフェース
+
+#### 🆕 Project Aggregate Root
+
+`Project` は複数の `Todo` を内包し、それらの依存関係を管理する集約ルートです：
+
+```python
+class Project:
+    """Project aggregate root that manages multiple Todos and their dependencies."""
+    
+    def add_todo(
+        self,
+        title: TodoTitle,
+        description: Optional[TodoDescription] = None,
+        dependencies: Optional[List[TodoId]] = None,
+    ) -> Todo:
+        """Add a new Todo to the project with dependency validation"""
+        # 依存関係の存在確認
+        if dependencies:
+            self._validate_dependencies_exist(dependencies)
+        
+        # Todoを作成
+        todo = Todo.create(title, self.id, description, deps)
+        
+        # 循環依存をチェック
+        if dependencies:
+            self._validate_no_circular_dependency(todo.id, dependencies)
+        
+        self._todos[todo.id] = todo
+        return todo
+    
+    def start_todo(self, todo_id: TodoId) -> None:
+        """Start a Todo after validating all dependencies are completed"""
+        todo = self.get_todo(todo_id)
+        
+        if not self._can_start_todo(todo):
+            raise TodoDependencyNotCompletedError()
+        
+        todo.start()
+```
+
+**Project Aggregate の主な特徴：**
+
+* **整合性保証**: 依存関係の検証（循環依存、存在確認、完了状態チェック）を集約内で実行
+* **カプセル化**: Todo の依存関係操作メソッドを非公開化し、Project 経由でのみアクセス可能
+* **トランザクション境界**: Project 全体を単一のトランザクションで永続化
+* **ビジネスルール実装**: 「依存先が完了していない Todo は開始できない」などのルールを集約内で実装
 
 このプロジェクトでの各コンポーネントの実装は以下の通りです：
 
-#### 1. エンティティ
+#### 1. Todo エンティティ（Project内で管理）
 
-エンティティは一意の識別子を持つドメインモデルです。このプロジェクトでは、`Todo`クラスがエンティティとして実装されています：
+`Todo` エンティティは `Project` 集約内で管理され、project_id を必須フィールドとして持ちます：
 
 ```python
 class Todo:
@@ -101,20 +152,27 @@ class Todo:
         self,
         id: TodoId,
         title: TodoTitle,
+        project_id: ProjectId,  # プロジェクトIDが必須
         description: Optional[TodoDescription] = None,
         status: TodoStatus = TodoStatus.NOT_STARTED,
-        created_at: datetime = datetime.now(),
-        updated_at: datetime = datetime.now(),
-        completed_at: Optional[datetime] = None,
+        # ...
     ):
         self._id = id
         self._title = title
-        self._description = description
-        self._status = status
-        self._created_at = created_at
-        self._updated_at = updated_at
-        self._completed_at = completed_at
+        self._project_id = project_id
+        # ...
+    
+    # 依存関係操作メソッドは非公開化（Project経由でのみ使用）
+    def _add_dependency(self, dep_id: TodoId) -> None:
+        """Add a dependency to this Todo (for internal use by Project)"""
+        # ...
 ```
+
+**主な変更点：**
+
+* **project_id フィールド**: どのProjectに属するかを明確化
+* **依存関係メソッドの非公開化**: `_add_dependency`, `_remove_dependency`, `_set_dependencies` はProject内でのみ使用
+* **整合性保証の委譲**: 循環依存や存在確認などの検証はProjectが担当
 
 エンティティの主な特徴：
 
@@ -377,6 +435,52 @@ class StartTodoUseCaseImpl(StartTodoUseCase):
 ![OpenAPI Doc](./screenshots/openapi_doc.png)
 
 ### RESTful APIのサンプルリクエスト
+
+#### 🆕 Project API（新機能）
+
+* 新しいProjectを作成する：
+
+```bash
+curl --location --request POST 'localhost:8000/projects' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "name": "My Todo Project",
+    "description": "A project to manage my todos"
+}'
+```
+
+* POSTリクエストのレスポンス：
+
+```json
+{
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "name": "My Todo Project",
+    "description": "A project to manage my todos",
+    "todos": [],
+    "created_at": "2025-05-26T10:30:00Z",
+    "updated_at": "2025-05-26T10:30:00Z"
+}
+```
+
+* ProjectにTodoを追加する（依存関係あり）：
+
+```bash
+curl --location --request POST 'localhost:8000/projects/550e8400-e29b-41d4-a716-446655440000/todos' \
+--header 'Content-Type: application/json' \
+--data-raw '{
+    "title": "Setup development environment",
+    "description": "Install dependencies and configure IDE",
+    "dependencies": ["other-todo-id-here"]
+}'
+```
+
+* すべてのProjectを取得する：
+
+```bash
+curl --location --request GET 'localhost:8000/projects'
+```
+
+#### 既存のTodo API（非推奨）
 
 * 新しいTodoを作成する：
 

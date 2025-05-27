@@ -16,6 +16,7 @@ from dddpy.domain.todo.value_objects import (
     TodoStatus,
     TodoTitle,
 )
+from dddpy.domain.project.value_objects import ProjectId
 from dddpy.infrastructure.sqlite.database import Base
 
 
@@ -24,6 +25,7 @@ class TodoModel(Base):
 
     __tablename__ = 'todo'
     id: Mapped[UUID] = mapped_column(primary_key=True, autoincrement=False)
+    project_id: Mapped[UUID] = mapped_column(nullable=False, index=True)
     title: Mapped[str] = mapped_column(String(100), nullable=False)
     description: Mapped[str] = mapped_column(String(1000), nullable=True)
     status: Mapped[str] = mapped_column(index=True, nullable=False)
@@ -60,6 +62,7 @@ class TodoModel(Base):
         return Todo(
             TodoId(self.id),
             TodoTitle(self.title),
+            ProjectId(self.project_id),
             TodoDescription(self.description) if self.description else None,
             TodoStatus(self.status),
             dependencies,
@@ -81,6 +84,7 @@ class TodoModel(Base):
 
         return TodoModel(
             id=todo.id.value,
+            project_id=todo.project_id.value,
             title=todo.title.value,
             description=todo.description.value if todo.description else None,
             status=todo.status.value,

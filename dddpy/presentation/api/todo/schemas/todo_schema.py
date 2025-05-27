@@ -4,6 +4,7 @@ from typing import List
 from pydantic import BaseModel, Field
 
 from dddpy.domain.todo.entities import Todo
+from dddpy.dto.todo import TodoOutputDto
 
 
 class TodoSchema(BaseModel):
@@ -38,3 +39,51 @@ class TodoSchema(BaseModel):
             if todo.completed_at
             else None,
         )
+
+    @staticmethod
+    def from_dto(dto: TodoOutputDto) -> 'TodoSchema':
+        """Convert a TodoOutputDto to a TodoSchema."""
+        return TodoSchema(
+            id=dto.id,
+            title=dto.title,
+            description=dto.description or '',
+            status=dto.status,
+            dependencies=dto.dependencies,
+            created_at=int(dto.created_at.timestamp() * 1000),
+            updated_at=int(dto.updated_at.timestamp() * 1000),
+            completed_at=int(dto.completed_at.timestamp() * 1000)
+            if dto.completed_at
+            else None,
+        )
+
+
+class TodoCreateSchema(BaseModel):
+    """TodoCreateSchema represents data structure as a create model."""
+
+    title: str = Field(min_length=1, max_length=100, examples=['Complete the project'])
+    description: str | None = Field(
+        default=None,
+        max_length=1000,
+        examples=['Finish implementing the DDD architecture'],
+    )
+    dependencies: List[str] | None = Field(
+        default=None,
+        examples=[['456e4567-e89b-12d3-a456-426614174001']],
+        description='List of Todo IDs that this Todo depends on',
+    )
+
+
+class TodoUpdateSchema(BaseModel):
+    """TodoUpdateScheme represents data structure as an update model."""
+
+    title: str = Field(min_length=1, max_length=100, examples=['Complete the project'])
+    description: str | None = Field(
+        default=None,
+        max_length=1000,
+        examples=['Finish implementing the DDD architecture'],
+    )
+    dependencies: List[str] | None = Field(
+        default=None,
+        examples=[['456e4567-e89b-12d3-a456-426614174001']],
+        description='List of Todo IDs that this Todo depends on',
+    )

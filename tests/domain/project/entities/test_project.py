@@ -1,0 +1,234 @@
+"""Test cases for the Project entity."""
+
+from datetime import datetime
+
+import pytest
+
+from dddpy.domain.project.entities.project import Project
+from dddpy.domain.project.value_objects import ProjectId, ProjectName, ProjectDescription
+from dddpy.domain.project.exceptions import TodoRemovalNotAllowedError
+from dddpy.domain.todo.value_objects import TodoTitle, TodoDescription as TodoDescriptionVO, TodoId
+from dddpy.domain.todo.exceptions import (
+    TodoCircularDependencyError,
+    TodoDependencyNotCompletedError,
+    TodoDependencyNotFoundError,
+    TodoNotFoundError,
+)
+
+
+def test_create_project():
+    """Test creating a new Project."""
+    project = Project.create('Test Project', 'Test Description')
+
+    assert isinstance(project.id, ProjectId)
+    assert project.name.value == 'Test Project'
+    assert project.description.value == 'Test Description'
+    assert len(project.todos) == 0
+    assert isinstance(project.created_at, datetime)
+    assert isinstance(project.updated_at, datetime)
+
+
+def test_create_project_without_description():
+    """Test creating a Project without description."""
+    project = Project.create('Test Project')
+
+    assert project.name.value == 'Test Project'
+    assert project.description.value is None
+
+
+def test_create_project_validates_name():
+    """Test that project creation validates name."""
+    with pytest.raises(ValueError, match='Project name is required'):
+        Project.create('')
+    
+    with pytest.raises(ValueError, match='Project name must be 100 characters or less'):
+        Project.create('a' * 101)
+
+
+def test_add_todo_to_project():
+    """Test adding a Todo to a project."""
+    project = Project.create('Test Project')
+    title = TodoTitle('Test Todo')
+    description = TodoDescriptionVO('Test Description')
+    
+    todo = project.add_todo(title, description)
+    
+    assert len(project.todos) == 1
+    assert todo.title == title
+    assert todo.description == description
+    assert todo.project_id == project.id
+
+
+def test_add_todo_with_dependencies():
+    """Test adding a Todo with dependencies."""
+    project = Project.create('Test Project')
+    
+    # Add first todo
+    todo1 = project.add_todo(TodoTitle('Todo 1'))
+    
+    # Add second todo that depends on first
+    todo2 = project.add_todo(TodoTitle('Todo 2'), dependencies=[todo1.id])
+    
+    assert len(project.todos) == 2
+    assert todo2.dependencies.contains(todo1.id)
+
+
+def test_add_todo_with_missing_dependency():
+    """Test adding a Todo with non-existent dependency raises error."""
+    project = Project.create('Test Project')
+    missing_id = TodoId.generate()
+    
+    with pytest.raises(TodoDependencyNotFoundError):
+        project.add_todo(TodoTitle('Todo with missing dep'), dependencies=[missing_id])
+
+
+def test_add_todo_with_circular_dependency():
+    """Test adding a Todo that would create circular dependency."""
+    project = Project.create('Test Project')
+    
+    # Add first todo
+    todo1 = project.add_todo(TodoTitle('Todo 1'))
+    
+    # Add second todo that depends on first
+    todo2 = project.add_todo(TodoTitle('Todo 2'), dependencies=[todo1.id])
+    
+    # Try to make todo1 depend on todo2 (would create circular dependency)
+    with pytest.raises(TodoCircularDependencyError):
+        project.update_todo_by_id(todo1.id, dependencies=[todo2.id])
+
+
+def test_remove_todo_from_project():
+    """Test removing a Todo from a project."""
+    project = Project.create('Test Project')
+    todo = project.add_todo(TodoTitle('Test Todo'))
+    
+    project.remove_todo(todo.id)
+    
+    assert len(project.todos) == 0
+
+
+def test_remove_todo_with_dependents():
+    """Test removing a Todo that has dependents raises error."""
+    project = Project.create('Test Project')
+    
+    # Add todos with dependency
+    todo1 = project.add_todo(TodoTitle('Todo 1'))
+    todo2 = project.add_todo(TodoTitle('Todo 2'), dependencies=[todo1.id])
+    
+    # Try to remove todo1 (it has dependents)
+    with pytest.raises(TodoRemovalNotAllowedError):
+        project.remove_todo(todo1.id)
+
+
+def test_get_todo_from_project():
+    """Test getting a Todo from a project."""
+    project = Project.create('Test Project')
+    todo = project.add_todo(TodoTitle('Test Todo'))
+    
+    retrieved_todo = project.get_todo(todo.id)
+    
+    assert retrieved_todo == todo
+
+
+def test_get_nonexistent_todo_raises_error():
+    """Test getting a non-existent Todo raises error."""
+    project = Project.create('Test Project')
+    missing_id = TodoId.generate()
+    
+    with pytest.raises(TodoNotFoundError):
+        project.get_todo(missing_id)
+
+
+def test_start_todo_in_project():
+    """Test starting a Todo through the project."""
+    project = Project.create('Test Project')
+    todo = project.add_todo(TodoTitle('Test Todo'))
+    
+    project.start_todo_by_id(todo.id)
+    
+    retrieved_todo = project.get_todo(todo.id)
+    assert retrieved_todo.status.value == 'in_progress'
+
+
+def test_start_todo_with_incomplete_dependencies():
+    """Test starting a Todo with incomplete dependencies raises error."""
+    project = Project.create('Test Project')
+    
+    # Add todos with dependency
+    todo1 = project.add_todo(TodoTitle('Todo 1'))
+    todo2 = project.add_todo(TodoTitle('Todo 2'), dependencies=[todo1.id])
+    
+    # Try to start todo2 without completing todo1
+    with pytest.raises(TodoDependencyNotCompletedError):
+        project.start_todo_by_id(todo2.id)
+
+
+def test_start_todo_with_completed_dependencies():
+    """Test starting a Todo with all dependencies completed."""
+    project = Project.create('Test Project')
+    
+    # Add todos with dependency
+    todo1 = project.add_todo(TodoTitle('Todo 1'))
+    todo2 = project.add_todo(TodoTitle('Todo 2'), dependencies=[todo1.id])
+    
+    # Complete todo1 first
+    project.start_todo_by_id(todo1.id)
+    project.complete_todo_by_id(todo1.id)
+    
+    # Now start todo2 should work
+    project.start_todo_by_id(todo2.id)
+    
+    retrieved_todo = project.get_todo(todo2.id)
+    assert retrieved_todo.status.value == 'in_progress'
+
+
+def test_complete_todo_in_project():
+    """Test completing a Todo through the project."""
+    project = Project.create('Test Project')
+    todo = project.add_todo(TodoTitle('Test Todo'))
+    
+    # Start then complete
+    project.start_todo_by_id(todo.id)
+    project.complete_todo_by_id(todo.id)
+    
+    retrieved_todo = project.get_todo(todo.id)
+    assert retrieved_todo.status.value == 'completed'
+    assert retrieved_todo.is_completed
+
+
+def test_update_project_name():
+    """Test updating project name."""
+    project = Project.create('Original Name')
+    
+    project.update_name(ProjectName('Updated Name'))
+    
+    assert project.name.value == 'Updated Name'
+    assert project.updated_at > project.created_at
+
+
+def test_update_project_description():
+    """Test updating project description."""
+    project = Project.create('Test Project', 'Original Description')
+    
+    project.update_description(ProjectDescription('Updated Description'))
+    
+    assert project.description.value == 'Updated Description'
+    assert project.updated_at > project.created_at
+
+
+def test_project_equality():
+    """Test Project equality comparison."""
+    project_id = ProjectId.generate()
+    project1 = Project.from_persistence(
+        project_id, 'Test Project', 'Test Description', {}, datetime.now(), datetime.now()
+    )
+    project2 = Project.from_persistence(
+        project_id, 'Different Name', 'Different Description', {}, datetime.now(), datetime.now()
+    )
+    project3 = Project.from_persistence(
+        ProjectId.generate(), 'Test Project', 'Test Description', {}, datetime.now(), datetime.now()
+    )
+    
+    assert project1 == project2  # Same ID
+    assert project1 != project3  # Different ID
+    assert project1 != 'not a project'  # Different type
