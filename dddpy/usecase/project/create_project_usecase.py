@@ -7,6 +7,7 @@ from dddpy.dto.todo import TodoOutputDto
 from dddpy.domain.project.entities import Project
 from dddpy.domain.project.value_objects import ProjectName, ProjectDescription
 from dddpy.domain.project.repositories import ProjectRepository
+from dddpy.domain.project.services import ProjectDomainService
 
 
 class CreateProjectUseCase(ABC):
@@ -25,6 +26,11 @@ class CreateProjectUseCaseImpl(CreateProjectUseCase):
 
     def execute(self, dto: ProjectCreateDto) -> ProjectOutputDto:
         """execute creates a new Project."""
+        # Validate project name uniqueness using domain service
+        name_vo = ProjectName(dto.name)
+        if not ProjectDomainService.is_project_name_unique(name_vo, self.project_repository):
+            raise ValueError(f"Project name '{dto.name}' already exists")
+        
         # Create project
         project = Project.create(dto.name, dto.description)
         

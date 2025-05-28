@@ -6,7 +6,11 @@ import pytest
 
 from dddpy.domain.project.entities.project import Project
 from dddpy.domain.project.value_objects import ProjectId, ProjectName, ProjectDescription
-from dddpy.domain.project.exceptions import TodoRemovalNotAllowedError
+from dddpy.domain.project.exceptions import (
+    TodoRemovalNotAllowedError,
+    DuplicateTodoTitleError,
+    TooManyTodosError,
+)
 from dddpy.domain.todo.value_objects import TodoTitle, TodoDescription as TodoDescriptionVO, TodoId
 from dddpy.domain.todo.exceptions import (
     TodoCircularDependencyError,
@@ -232,3 +236,75 @@ def test_project_equality():
     assert project1 == project2  # Same ID
     assert project1 != project3  # Different ID
     assert project1 != 'not a project'  # Different type
+
+
+def test_add_todo_with_duplicate_title_raises_error():
+    """Test adding a Todo with duplicate title raises error."""
+    project = Project.create('Test Project')
+    title = 'Duplicate Title'
+    
+    # Add first todo
+    project.add_todo(TodoTitle(title))
+    
+    # Try to add second todo with same title
+    with pytest.raises(DuplicateTodoTitleError) as exc_info:
+        project.add_todo(TodoTitle(title))
+    
+    assert exc_info.value.title == title
+
+
+def test_update_todo_with_duplicate_title_raises_error():
+    """Test updating a Todo with duplicate title raises error."""
+    project = Project.create('Test Project')
+    
+    # Add two todos
+    todo1 = project.add_todo(TodoTitle('Todo 1'))
+    todo2 = project.add_todo(TodoTitle('Todo 2'))
+    
+    # Try to update todo2 with todo1's title
+    with pytest.raises(DuplicateTodoTitleError) as exc_info:
+        project.update_todo_by_id(todo2.id, title=TodoTitle('Todo 1'))
+    
+    assert exc_info.value.title == 'Todo 1'
+
+
+def test_update_todo_with_same_title_succeeds():
+    """Test updating a Todo with its own title succeeds."""
+    project = Project.create('Test Project')
+    
+    # Add todo
+    todo = project.add_todo(TodoTitle('Original Title'))
+    
+    # Update with same title should succeed
+    updated_todo = project.update_todo_by_id(todo.id, title=TodoTitle('Original Title'))
+    
+    assert updated_todo.title.value == 'Original Title'
+
+
+def test_add_todo_exceeding_limit_raises_error():
+    """Test adding more todos than the limit raises error."""
+    project = Project.create('Test Project')
+    
+    # Mock the MAX_TODO_COUNT to a small number for testing
+    original_max = Project.MAX_TODO_COUNT
+    Project.MAX_TODO_COUNT = 2
+    
+    try:
+        # Add todos up to the limit
+        project.add_todo(TodoTitle('Todo 1'))
+        project.add_todo(TodoTitle('Todo 2'))
+        
+        # Try to add one more
+        with pytest.raises(TooManyTodosError) as exc_info:
+            project.add_todo(TodoTitle('Todo 3'))
+        
+        assert exc_info.value.current_count == 2
+        assert exc_info.value.max_count == 2
+    finally:
+        # Restore original limit
+        Project.MAX_TODO_COUNT = original_max
+
+
+def test_max_todo_count_constant():
+    """Test that MAX_TODO_COUNT is set to expected value."""
+    assert Project.MAX_TODO_COUNT == 1000

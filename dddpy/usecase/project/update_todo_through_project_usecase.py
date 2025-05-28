@@ -32,12 +32,7 @@ class UpdateTodoThroughProjectUseCaseImpl(UpdateTodoThroughProjectUseCase):
         _todo_id = TodoId(UUID(todo_id))
         
         # Find the project that contains this todo
-        projects = self.project_repository.find_all()
-        project = None
-        for p in projects:
-            if _todo_id in p.todos_mapping:
-                project = p
-                break
+        project = self.project_repository.find_project_by_todo_id(_todo_id)
         
         if project is None:
             raise ProjectNotFoundError()

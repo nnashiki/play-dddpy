@@ -4,7 +4,11 @@ from datetime import datetime
 from typing import Dict, List, Mapping, Optional, Set
 
 from dddpy.domain.project.value_objects import ProjectId, ProjectName, ProjectDescription
-from dddpy.domain.project.exceptions import TodoRemovalNotAllowedError
+from dddpy.domain.project.exceptions import (
+    TodoRemovalNotAllowedError,
+    DuplicateTodoTitleError,
+    TooManyTodosError,
+)
 from dddpy.domain.todo.entities import Todo
 from dddpy.domain.todo.value_objects import (
     TodoDependencies,
@@ -25,6 +29,9 @@ from dddpy.domain.todo.exceptions import (
 
 class Project:
     """Project aggregate root that manages multiple Todos and their dependencies."""
+    
+    # Domain constraints
+    MAX_TODO_COUNT = 1000
 
     def __init__(
         self,
@@ -100,6 +107,12 @@ class Project:
         dependencies: Optional[List[TodoId]] = None,
     ) -> Todo:
         """Add a new Todo to the project with dependency validation"""
+        # Validate todo count limit
+        self._validate_todo_limit()
+        
+        # Validate no duplicate title
+        self._validate_no_duplicate_title(title)
+        
         # Validate dependencies exist within this project
         if dependencies:
             self._validate_dependencies_exist(dependencies)
@@ -155,6 +168,8 @@ class Project:
         todo = self._todos[todo_id]
         
         if title is not None:
+            # Validate no duplicate title (excluding current todo)
+            self._validate_no_duplicate_title_excluding(title, todo_id)
             todo.update_title(title)
         
         if description is not None:
@@ -244,6 +259,23 @@ class Project:
             if not dep_todo or not dep_todo.is_completed:
                 return False
         return True
+    
+    def _validate_todo_limit(self) -> None:
+        """Validate that adding a new todo would not exceed the limit"""
+        if len(self._todos) >= self.MAX_TODO_COUNT:
+            raise TooManyTodosError(len(self._todos), self.MAX_TODO_COUNT)
+    
+    def _validate_no_duplicate_title(self, title: TodoTitle) -> None:
+        """Validate that the title is not already used by another todo"""
+        for todo in self._todos.values():
+            if todo.title.value == title.value:
+                raise DuplicateTodoTitleError(title.value)
+    
+    def _validate_no_duplicate_title_excluding(self, title: TodoTitle, exclude_todo_id: TodoId) -> None:
+        """Validate that the title is not already used by another todo (excluding a specific todo)"""
+        for todo_id, todo in self._todos.items():
+            if todo_id != exclude_todo_id and todo.title.value == title.value:
+                raise DuplicateTodoTitleError(title.value)
 
     @staticmethod
     def create(name: str, description: Optional[str] = None) -> 'Project':

@@ -17,3 +17,8 @@ class ProjectName:
 
     def __str__(self) -> str:
         return self.value
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, ProjectName):
+            return self.value == other.value
+        return False
