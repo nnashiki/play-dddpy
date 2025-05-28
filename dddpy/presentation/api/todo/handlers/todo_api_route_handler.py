@@ -3,19 +3,11 @@
 from typing import List
 from uuid import UUID
 
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import Depends, FastAPI, status
 
 from dddpy.dto.todo import TodoUpdateDto
 
-from dddpy.domain.todo.exceptions import (
-    TodoAlreadyCompletedError,
-    TodoAlreadyStartedError,
-    TodoCircularDependencyError,
-    TodoDependencyNotCompletedError,
-    TodoDependencyNotFoundError,
-    TodoNotFoundError,
-    TodoNotStartedError,
-)
+
 from dddpy.infrastructure.di.injection import (
     get_start_todo_usecase,
     get_complete_todo_usecase,
@@ -51,14 +43,9 @@ class TodoApiRouteHandler:
         def get_todos(                             # pylint: disable=unused-variable
             usecase: FindProjectsUseCase = Depends(get_find_projects_usecase),
         ):
-            try:
-                project_outputs = usecase.execute()
-                todos = [todo for project in project_outputs for todo in project.todos]
-                return [TodoSchema.from_dto(todo) for todo in todos]
-            except Exception as exc:               # pragma: no cover
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                ) from exc
+            project_outputs = usecase.execute()
+            todos = [todo for project in project_outputs for todo in project.todos]
+            return [TodoSchema.from_dto(todo) for todo in todos]
 
         # ------------------------------------------------------------------ #
         #  GET /todos/{todo_id} – retrieve a single todo                      #
@@ -73,18 +60,8 @@ class TodoApiRouteHandler:
             todo_id: UUID,
             usecase: FindTodoThroughProjectUseCase = Depends(get_find_todo_usecase),
         ):
-            try:
-                output = usecase.execute(str(todo_id))
-                return TodoSchema.from_dto(output)
-            except TodoNotFoundError as exc:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail=exc.message,
-                ) from exc
-            except Exception as exc:               # pragma: no cover
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                ) from exc
+            output = usecase.execute(str(todo_id))
+            return TodoSchema.from_dto(output)
 
         # ------------------------------------------------------------------ #
         #  PUT /todos/{todo_id} – update                                      #
@@ -107,23 +84,8 @@ class TodoApiRouteHandler:
                 description=data.description,
                 dependencies=data.dependencies,
             )
-            try:
-                todo_output = usecase.execute(str(todo_id), dto)
-                return TodoSchema.from_dto(todo_output)
-            except TodoNotFoundError as exc:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail=exc.message,
-                ) from exc
-            except (TodoDependencyNotFoundError, TodoCircularDependencyError) as exc:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=str(exc),
-                ) from exc
-            except Exception as exc:               # pragma: no cover
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                ) from exc
+            todo_output = usecase.execute(str(todo_id), dto)
+            return TodoSchema.from_dto(todo_output)
 
         # ------------------------------------------------------------------ #
         #  PATCH /todos/{todo_id}/start – start                               #
@@ -141,23 +103,8 @@ class TodoApiRouteHandler:
             todo_id: UUID,
             usecase: StartTodoThroughProjectUseCase = Depends(get_start_todo_usecase),
         ):
-            try:
-                todo_output = usecase.execute(str(todo_id))
-                return TodoSchema.from_dto(todo_output)
-            except TodoNotFoundError as exc:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail=exc.message,
-                ) from exc
-            except (TodoAlreadyStartedError, TodoDependencyNotCompletedError) as exc:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=str(exc),
-                ) from exc
-            except Exception as exc:              # pragma: no cover
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                ) from exc
+            todo_output = usecase.execute(str(todo_id))
+            return TodoSchema.from_dto(todo_output)
 
         # ------------------------------------------------------------------ #
         #  PATCH /todos/{todo_id}/complete – complete                         #
@@ -172,20 +119,5 @@ class TodoApiRouteHandler:
             todo_id: UUID,
             usecase: CompleteTodoThroughProjectUseCase = Depends(get_complete_todo_usecase),
         ):
-            try:
-                todo_output = usecase.execute(str(todo_id))
-                return TodoSchema.from_dto(todo_output)
-            except TodoNotFoundError as exc:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail=exc.message,
-                ) from exc
-            except (TodoNotStartedError, TodoAlreadyCompletedError) as exc:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=str(exc),
-                ) from exc
-            except Exception as exc:              # pragma: no cover
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                ) from exc
+            todo_output = usecase.execute(str(todo_id))
+            return TodoSchema.from_dto(todo_output)

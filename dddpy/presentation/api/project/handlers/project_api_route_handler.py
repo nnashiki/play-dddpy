@@ -3,18 +3,10 @@
 from typing import List
 from uuid import UUID
 
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import Depends, FastAPI, status
 
 from dddpy.dto.project import ProjectCreateDto, AddTodoToProjectDto
-from dddpy.domain.project.exceptions import (
-    ProjectNotFoundError,
-    ProjectDeletionNotAllowedError,
-    TodoRemovalNotAllowedError,
-)
-from dddpy.domain.todo.exceptions import (
-    TodoCircularDependencyError,
-    TodoDependencyNotFoundError,
-)
+
 from dddpy.infrastructure.di.injection import (
     get_create_project_usecase,
     get_add_todo_to_project_usecase,
@@ -48,35 +40,15 @@ class ProjectApiRouteHandler:
         def get_projects(
             usecase: FindProjectsUseCase = Depends(get_find_projects_usecase),
         ):
-            try:
-                project_outputs = usecase.execute()
-                return [ProjectSchema.from_dto(project) for project in project_outputs]
-            except Exception as e:
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                ) from e
+            project_outputs = usecase.execute()
+            return [ProjectSchema.from_dto(project) for project in project_outputs]
 
         @app.delete('/projects/{project_id}', status_code=204)
         def delete_project(
             project_id: UUID,
             usecase: DeleteProjectUseCase = Depends(get_delete_project_usecase),
         ):
-            try:
-                usecase.execute(str(project_id))
-            except ProjectNotFoundError as e:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail=e.message,
-                ) from e
-            except ProjectDeletionNotAllowedError as e:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=e.message,
-                ) from e
-            except Exception as e:
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                ) from e
+            usecase.execute(str(project_id))
 
         @app.post(
             '/projects',
@@ -93,18 +65,7 @@ class ProjectApiRouteHandler:
                 description=data.description,
             )
 
-            try:
-                project_output = usecase.execute(dto)
-            except ValueError as e:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=str(e),
-                ) from e
-            except Exception as e:
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                ) from e
-
+            project_output = usecase.execute(dto)
             return ProjectSchema.from_dto(project_output)
 
         @app.post(
@@ -132,29 +93,14 @@ class ProjectApiRouteHandler:
                 dependencies=data.dependencies,
             )
 
-            try:
-                todo_output = usecase.execute(str(project_id), dto)
-                return {
-                    'id': todo_output.id,
-                    'title': todo_output.title,
-                    'description': todo_output.description,
-                    'status': todo_output.status,
-                    'dependencies': todo_output.dependencies,
-                    'created_at': int(todo_output.created_at.timestamp() * 1000),
-                    'updated_at': int(todo_output.updated_at.timestamp() * 1000),
-                    'completed_at': int(todo_output.completed_at.timestamp() * 1000) if todo_output.completed_at else None,
-                }
-            except ProjectNotFoundError as e:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail=e.message,
-                ) from e
-            except (TodoDependencyNotFoundError, TodoCircularDependencyError) as e:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=str(e),
-                ) from e
-            except Exception as e:
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                ) from e
+            todo_output = usecase.execute(str(project_id), dto)
+            return {
+                'id': todo_output.id,
+                'title': todo_output.title,
+                'description': todo_output.description,
+                'status': todo_output.status,
+                'dependencies': todo_output.dependencies,
+                'created_at': int(todo_output.created_at.timestamp() * 1000),
+                'updated_at': int(todo_output.updated_at.timestamp() * 1000),
+                'completed_at': int(todo_output.completed_at.timestamp() * 1000) if todo_output.completed_at else None,
+            }
