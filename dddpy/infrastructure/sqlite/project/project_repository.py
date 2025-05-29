@@ -116,7 +116,19 @@ class ProjectRepositoryImpl(ProjectRepository):
         self.session.query(ProjectModel).filter_by(id=project_id.value).delete()
 
     def find_project_by_todo_id(self, todo_id: TodoId) -> Optional[Project]:
-        """Find a Project that contains the specified Todo."""
+        """Find a Project that contains the specified Todo.
+        
+        .. deprecated:: 2.0.0
+            This method violates DDD aggregate boundaries. 
+            Use find_by_id(project_id) instead and access todos through the Project aggregate.
+        """
+        import warnings
+        warnings.warn(
+            "find_project_by_todo_id is deprecated and violates DDD aggregate boundaries. "
+            "Use find_by_id(project_id) instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
         try:
             # Find the todo first to get the project_id
             todo_row = self.session.query(TodoModel).filter_by(id=todo_id.value).one()

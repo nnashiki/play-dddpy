@@ -22,14 +22,14 @@ def test_start_todo_through_project_success():
     todo = project.add_todo(TodoTitle('Test Todo'))
     
     # Configure mock to return the project
-    mock_repository.find_project_by_todo_id.return_value = project
+    mock_repository.find_by_id.return_value = project
     
     # Execute
     usecase = StartTodoThroughProjectUseCaseImpl(mock_repository)
-    result = usecase.execute(str(todo.id.value))
+    result = usecase.execute(str(project.id.value), str(todo.id.value))
     
     # Verify
-    mock_repository.find_project_by_todo_id.assert_called_once_with(todo.id)
+    mock_repository.find_by_id.assert_called_once()
     mock_repository.save.assert_called_once_with(project)
     
     assert result.id == str(todo.id.value)
@@ -43,33 +43,33 @@ def test_start_todo_through_project_todo_not_found():
     mock_repository = Mock(spec=ProjectRepository)
     todo_id = str(uuid4())
     
-    # Configure mock to return None (todo not found)
-    mock_repository.find_project_by_todo_id.return_value = None
+    # Configure mock to return None (project not found)
+    mock_repository.find_by_id.return_value = None
     
     # Execute & Verify
     usecase = StartTodoThroughProjectUseCaseImpl(mock_repository)
     
     with pytest.raises(ProjectNotFoundError):
-        usecase.execute(todo_id)
+        usecase.execute(str(uuid4()), todo_id)
     
-    mock_repository.find_project_by_todo_id.assert_called_once()
+    mock_repository.find_by_id.assert_called_once()
     mock_repository.save.assert_not_called()
 
 
-def test_start_todo_uses_find_project_by_todo_id():
-    """Test that the usecase uses find_project_by_todo_id instead of find_all."""
+def test_start_todo_uses_find_by_id():
+    """Test that the usecase uses find_by_id instead of find_project_by_todo_id."""
     # Setup
     mock_repository = Mock(spec=ProjectRepository)
     project = Project.create('Test Project')
     todo = project.add_todo(TodoTitle('Test Todo'))
     
     # Configure mock to return the project
-    mock_repository.find_project_by_todo_id.return_value = project
+    mock_repository.find_by_id.return_value = project
     
     # Execute
     usecase = StartTodoThroughProjectUseCaseImpl(mock_repository)
-    usecase.execute(str(todo.id.value))
+    usecase.execute(str(project.id.value), str(todo.id.value))
     
-    # Verify that find_project_by_todo_id was called, not find_all
-    mock_repository.find_project_by_todo_id.assert_called_once_with(todo.id)
+    # Verify that find_by_id was called, not find_project_by_todo_id
+    mock_repository.find_by_id.assert_called_once()
     mock_repository.find_all.assert_not_called()

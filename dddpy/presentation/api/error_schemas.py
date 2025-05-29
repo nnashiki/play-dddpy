@@ -1,6 +1,19 @@
 """Standardized error response schemas for the API."""
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
+
+class ErrorMessageProjectNotFound(BaseModel):
+    """Error message for Project not found."""
+    
+    detail: str = Field(
+        default="Project not found",
+        examples=["Project not found"]
+    )
+    error_type: str = Field(
+        default="ProjectNotFoundError",
+        examples=["ProjectNotFoundError"]
+    )
 
 
 class ErrorResponse(BaseModel):

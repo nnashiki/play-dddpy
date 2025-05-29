@@ -13,7 +13,7 @@ class FindTodoThroughProjectUseCase(ABC):
     """Abstract base class for find todo through project use case."""
 
     @abstractmethod
-    def execute(self, todo_id: str) -> TodoOutputDto:
+    def execute(self, project_id: str, todo_id: str) -> TodoOutputDto:
         """Execute the find todo through project use case."""
         ...
 
@@ -24,12 +24,17 @@ class FindTodoThroughProjectUseCaseImpl(FindTodoThroughProjectUseCase):
     def __init__(self, project_repository: ProjectRepository):
         self.project_repository = project_repository
 
-    def execute(self, todo_id: str) -> TodoOutputDto:
+    def execute(self, project_id: str, todo_id: str) -> TodoOutputDto:
         """Execute the find todo through project use case."""
+        from dddpy.domain.project.value_objects import ProjectId
+        
+        _project_id = ProjectId(UUID(project_id))
         _todo_id = TodoId(UUID(todo_id))
-        project = self.project_repository.find_project_by_todo_id(_todo_id)
+        
+        project = self.project_repository.find_by_id(_project_id)
         if project is None:
-            raise TodoNotFoundError()
+            from dddpy.domain.project.exceptions import ProjectNotFoundError
+            raise ProjectNotFoundError()
         
         todo = project.get_todo(_todo_id)
         return TodoOutputDto(

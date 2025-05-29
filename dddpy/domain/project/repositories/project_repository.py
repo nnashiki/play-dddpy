@@ -29,4 +29,9 @@ class ProjectRepository(ABC):
 
     @abstractmethod
     def find_project_by_todo_id(self, todo_id: TodoId) -> Optional[Project]:
-        """Find a Project that contains the specified Todo"""
+        """Find a Project that contains the specified Todo.
+        
+        .. deprecated:: 2.0.0
+            This method violates DDD aggregate boundaries. 
+            Use find_by_id(project_id) instead and access todos through the Project aggregate.
+        """

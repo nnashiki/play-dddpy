@@ -17,7 +17,7 @@ class UpdateTodoThroughProjectUseCase(ABC):
     """UpdateTodoThroughProjectUseCase defines an interface for updating a Todo through Project."""
 
     @abstractmethod
-    def execute(self, todo_id: str, dto: TodoUpdateDto) -> TodoOutputDto:
+    def execute(self, project_id: str, todo_id: str, dto: TodoUpdateDto) -> TodoOutputDto:
         """execute updates a Todo through Project aggregate."""
 
 
@@ -27,12 +27,15 @@ class UpdateTodoThroughProjectUseCaseImpl(UpdateTodoThroughProjectUseCase):
     def __init__(self, project_repository: ProjectRepository):
         self.project_repository = project_repository
 
-    def execute(self, todo_id: str, dto: TodoUpdateDto) -> TodoOutputDto:
+    def execute(self, project_id: str, todo_id: str, dto: TodoUpdateDto) -> TodoOutputDto:
         """execute updates a Todo through Project aggregate."""
+        from dddpy.domain.project.value_objects import ProjectId
+        
+        _project_id = ProjectId(UUID(project_id))
         _todo_id = TodoId(UUID(todo_id))
         
-        # Find the project that contains this todo
-        project = self.project_repository.find_project_by_todo_id(_todo_id)
+        # Find the project by ID
+        project = self.project_repository.find_by_id(_project_id)
         
         if project is None:
             raise ProjectNotFoundError()
