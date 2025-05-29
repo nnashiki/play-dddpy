@@ -7,6 +7,7 @@ from dddpy.dto.todo import TodoOutputDto
 from dddpy.domain.project.repositories import ProjectRepository
 from dddpy.domain.todo.value_objects import TodoId
 from dddpy.domain.todo.exceptions import TodoNotFoundError
+from dddpy.presentation.assembler import ProjectTodoAssembler
 
 
 class FindTodoThroughProjectUseCase(ABC):
@@ -37,16 +38,7 @@ class FindTodoThroughProjectUseCaseImpl(FindTodoThroughProjectUseCase):
             raise ProjectNotFoundError()
         
         todo = project.get_todo(_todo_id)
-        return TodoOutputDto(
-            id=str(todo.id.value),
-            title=todo.title.value,
-            description=todo.description.value if todo.description else None,
-            status=todo.status.value,
-            dependencies=[str(d.value) for d in todo.dependencies.values],
-            created_at=todo.created_at,
-            updated_at=todo.updated_at,
-            completed_at=todo.completed_at,
-        )
+        return ProjectTodoAssembler.to_output_dto(todo)
 
 
 def new_find_todo_usecase(repo: ProjectRepository) -> FindTodoThroughProjectUseCase:

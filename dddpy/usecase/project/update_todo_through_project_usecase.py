@@ -11,6 +11,7 @@ from dddpy.domain.todo.value_objects import (
     TodoTitle,
     TodoDescription,
 )
+from dddpy.presentation.assembler import ProjectTodoAssembler
 
 
 class UpdateTodoThroughProjectUseCase(ABC):
@@ -51,17 +52,8 @@ class UpdateTodoThroughProjectUseCaseImpl(UpdateTodoThroughProjectUseCase):
         # Save project with updated todo
         self.project_repository.save(project)
 
-        # Convert to output DTO
-        return TodoOutputDto(
-            id=str(updated_todo.id.value),
-            title=updated_todo.title.value,
-            description=updated_todo.description.value if updated_todo.description else None,
-            status=updated_todo.status.value,
-            dependencies=[str(dep_id.value) for dep_id in updated_todo.dependencies.values],
-            created_at=updated_todo.created_at,
-            updated_at=updated_todo.updated_at,
-            completed_at=updated_todo.completed_at,
-        )
+        # Convert to output DTO using Assembler
+        return ProjectTodoAssembler.to_output_dto(updated_todo)
 
 
 def new_update_todo_through_project_usecase(project_repository: ProjectRepository) -> UpdateTodoThroughProjectUseCase:

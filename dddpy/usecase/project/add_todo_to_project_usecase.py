@@ -13,6 +13,7 @@ from dddpy.domain.todo.value_objects import (
     TodoId,
     TodoTitle,
 )
+from dddpy.presentation.assembler import ProjectTodoAssembler
 
 
 class AddTodoToProjectUseCase(ABC):
@@ -52,17 +53,8 @@ class AddTodoToProjectUseCaseImpl(AddTodoToProjectUseCase):
         # Save project with new todo
         self.project_repository.save(project)
 
-        # Convert to output DTO
-        return TodoOutputDto(
-            id=str(todo.id.value),
-            title=todo.title.value,
-            description=todo.description.value if todo.description else None,
-            status=todo.status.value,
-            dependencies=[str(dep_id.value) for dep_id in todo.dependencies.values],
-            created_at=todo.created_at,
-            updated_at=todo.updated_at,
-            completed_at=todo.completed_at,
-        )
+        # Convert to output DTO using Assembler
+        return ProjectTodoAssembler.to_output_dto(todo)
 
 
 def new_add_todo_to_project_usecase(project_repository: ProjectRepository) -> AddTodoToProjectUseCase:
