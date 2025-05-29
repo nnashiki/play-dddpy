@@ -224,14 +224,32 @@ def test_update_project_description():
 def test_project_equality():
     """Test Project equality comparison."""
     project_id = ProjectId.generate()
-    project1 = Project.from_persistence(
-        project_id, 'Test Project', 'Test Description', {}, datetime.now(), datetime.now()
+    current_time = datetime.now()
+    
+    # Create projects with same ID but different properties
+    project1 = Project(
+        id=project_id,
+        name=ProjectName('Test Project'),
+        description=ProjectDescription('Test Description'),
+        todos={},
+        created_at=current_time,
+        updated_at=current_time
     )
-    project2 = Project.from_persistence(
-        project_id, 'Different Name', 'Different Description', {}, datetime.now(), datetime.now()
+    project2 = Project(
+        id=project_id,
+        name=ProjectName('Different Name'),
+        description=ProjectDescription('Different Description'),
+        todos={},
+        created_at=current_time,
+        updated_at=current_time
     )
-    project3 = Project.from_persistence(
-        ProjectId.generate(), 'Test Project', 'Test Description', {}, datetime.now(), datetime.now()
+    project3 = Project(
+        id=ProjectId.generate(),
+        name=ProjectName('Test Project'),
+        description=ProjectDescription('Test Description'),
+        todos={},
+        created_at=current_time,
+        updated_at=current_time
     )
     
     assert project1 == project2  # Same ID

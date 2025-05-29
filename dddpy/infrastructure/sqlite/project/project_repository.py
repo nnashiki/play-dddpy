@@ -12,6 +12,7 @@ from dddpy.domain.project.value_objects import ProjectId
 from dddpy.domain.todo.entities import Todo
 from dddpy.domain.todo.value_objects import TodoId
 from dddpy.infrastructure.sqlite.project.project_model import ProjectModel
+from dddpy.infrastructure.sqlite.project.project_mapper import ProjectMapper
 from dddpy.infrastructure.sqlite.todo.todo_model import TodoModel
 
 
@@ -29,25 +30,13 @@ class ProjectRepositoryImpl(ProjectRepository):
         except NoResultFound:
             return None
 
-        project = project_row.to_entity()
-        
-        # Load todos for this project
+        # Mapper で Project + Todos を組み立て
         todo_rows = (
             self.session.query(TodoModel)
             .filter_by(project_id=project_id.value)
             .all()
         )
-        
-        # Convert todos to entities and add to project
-        todos_dict: Dict[TodoId, Todo] = {}
-        for todo_row in todo_rows:
-            todo = todo_row.to_entity()
-            todos_dict[todo.id] = todo
-        
-        # Load todos using the internal method
-        project._load_todos(todos_dict)
-        
-        return project
+        return ProjectMapper.to_entity(project_row, todo_rows)
 
     def find_all(self, limit: Optional[int] = None) -> List[Project]:
         """Retrieve all Project items with optional limit."""
@@ -63,30 +52,19 @@ class ProjectRepositoryImpl(ProjectRepository):
         
         projects = []
         for project_row in project_rows:
-            project = project_row.to_entity()
-            
-            # Load todos for this project
             todo_rows = (
                 self.session.query(TodoModel)
-                .filter_by(project_id=project.id.value)
+                .filter_by(project_id=project_row.id)
                 .all()
             )
-            
-            # Convert todos to entities and add to project
-            todos_dict: Dict[TodoId, Todo] = {}
-            for todo_row in todo_rows:
-                todo = todo_row.to_entity()
-                todos_dict[todo.id] = todo
-            
-            project._load_todos(todos_dict)
-            projects.append(project)
+            projects.append(ProjectMapper.to_entity(project_row, todo_rows))
         
         return projects
 
     def save(self, project: Project) -> None:
         """Save a Project and all its todos."""
         # Save project
-        project_dto = ProjectModel.from_entity(project)
+        project_dto = ProjectMapper.from_entity(project)
         try:
             existing_project = (
                 self.session.query(ProjectModel).filter_by(id=project.id.value).one()

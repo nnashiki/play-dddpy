@@ -1,16 +1,11 @@
 """Data Transfer Object for Project entity in SQLite database."""
 
-import json
-import logging
-from datetime import datetime, timezone
 from uuid import UUID
 
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from dddpy.domain.project.entities import Project
-from dddpy.domain.project.value_objects import ProjectId
-from dddpy.domain.shared.clock import SystemClock
 from dddpy.infrastructure.sqlite.database import Base
 
 
@@ -24,17 +19,8 @@ class ProjectModel(Base):
     created_at: Mapped[int] = mapped_column(index=True, nullable=False)
     updated_at: Mapped[int] = mapped_column(index=True, nullable=False)
 
-    def to_entity(self) -> Project:
-        """Convert DTO to domain entity."""
-        return Project.from_persistence(
-            ProjectId(self.id),
-            self.name,
-            self.description,
-            {},  # todos will be loaded separately
-            datetime.fromtimestamp(self.created_at / 1000, tz=timezone.utc),
-            datetime.fromtimestamp(self.updated_at / 1000, tz=timezone.utc),
-            SystemClock(),
-        )
+    # NOTE: ProjectModel 自体は Mapper 経由でしかエンティティ化しない。
+    # 不用意に呼ばれないよう to_entity を削除 or Deprecated 指定にする。
 
     @staticmethod
     def from_entity(project: Project) -> 'ProjectModel':

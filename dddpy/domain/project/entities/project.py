@@ -289,30 +289,4 @@ class Project:
         
         return Project(ProjectId.generate(), project_name, project_description)
     
-    @staticmethod
-    def from_persistence(
-        id: ProjectId,
-        name: str,
-        description: Optional[str],
-        todos: Dict[TodoId, Todo],
-        created_at: datetime,
-        updated_at: datetime,
-        clock: Optional[Clock] = None,
-    ) -> 'Project':
-        """Create a Project from persistence data (for infrastructure layer)"""
-        project_name = ProjectName(name)
-        project_description = ProjectDescription(description)
-        
-        return Project(
-            id=id,
-            name=project_name,
-            description=project_description,
-            todos=todos,
-            clock=clock,
-            created_at=created_at,
-            updated_at=updated_at,
-        )
-    
-    def _load_todos(self, todos: Dict[TodoId, Todo]) -> None:
-        """Load todos for internal use (for infrastructure layer)"""
-        self._todos = todos
+
