@@ -9,8 +9,6 @@ from sqlalchemy.orm.session import Session
 from dddpy.domain.project.entities import Project
 from dddpy.domain.project.repositories import ProjectRepository
 from dddpy.domain.project.value_objects import ProjectId
-from dddpy.domain.todo.entities import Todo
-from dddpy.domain.todo.value_objects import TodoId
 from dddpy.infrastructure.sqlite.project.project_model import ProjectModel
 from dddpy.infrastructure.sqlite.project.project_mapper import ProjectMapper
 from dddpy.infrastructure.sqlite.todo.todo_model import TodoModel
@@ -114,30 +112,6 @@ class ProjectRepositoryImpl(ProjectRepository):
         
         # Delete the project
         self.session.query(ProjectModel).filter_by(id=project_id.value).delete()
-
-    def find_project_by_todo_id(self, todo_id: TodoId) -> Optional[Project]:
-        """Find a Project that contains the specified Todo.
-        
-        .. deprecated:: 2.0.0
-            This method violates DDD aggregate boundaries. 
-            Use find_by_id(project_id) instead and access todos through the Project aggregate.
-        """
-        import warnings
-        warnings.warn(
-            "find_project_by_todo_id is deprecated and violates DDD aggregate boundaries. "
-            "Use find_by_id(project_id) instead.",
-            DeprecationWarning,
-            stacklevel=2
-        )
-        try:
-            # Find the todo first to get the project_id
-            todo_row = self.session.query(TodoModel).filter_by(id=todo_id.value).one()
-            project_id = ProjectId(todo_row.project_id)
-            
-            # Use existing find_by_id method to get the full project with todos
-            return self.find_by_id(project_id)
-        except NoResultFound:
-            return None
 
 
 def new_project_repository(session: Session) -> ProjectRepository:
