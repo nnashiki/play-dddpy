@@ -11,6 +11,7 @@ from dddpy.domain.project.exceptions import (
     DuplicateTodoTitleError,
     TooManyTodosError,
 )
+from dddpy.domain.shared.clock import FixedClock
 from dddpy.domain.todo.value_objects import TodoTitle, TodoDescription as TodoDescriptionVO, TodoId
 from dddpy.domain.todo.exceptions import (
     TodoCircularDependencyError,
@@ -308,3 +309,53 @@ def test_add_todo_exceeding_limit_raises_error():
 def test_max_todo_count_constant():
     """Test that MAX_TODO_COUNT is set to expected value."""
     assert Project.MAX_TODO_COUNT == 1000
+
+
+def test_project_with_fixed_clock():
+    """Test Project behavior with FixedClock for predictable time testing."""
+    fixed_time = datetime(2023, 1, 1, 12, 0, 0)
+    clock = FixedClock(fixed_time)
+    
+    # Create project with fixed clock
+    project = Project(
+        id=ProjectId.generate(),
+        name=ProjectName('Test Project'),
+        description=ProjectDescription('Test Description'),
+        clock=clock
+    )
+    
+    # All timestamps should use the fixed time
+    assert project.created_at == fixed_time
+    assert project.updated_at == fixed_time
+    
+    # Update operations should also use fixed time
+    project.update_name(ProjectName('Updated Name'))
+    assert project.updated_at == fixed_time
+    
+    # Add todo should also use fixed time
+    todo = project.add_todo(TodoTitle('Test Todo'))
+    assert todo.created_at == fixed_time
+    assert todo.updated_at == fixed_time
+
+
+def test_todo_completion_with_fixed_clock():
+    """Test Todo completion timestamp with FixedClock."""
+    fixed_time = datetime(2023, 6, 15, 14, 30, 45)
+    clock = FixedClock(fixed_time)
+    
+    project = Project(
+        id=ProjectId.generate(),
+        name=ProjectName('Test Project'),
+        clock=clock
+    )
+    
+    # Add and complete a todo
+    todo = project.add_todo(TodoTitle('Test Todo'))
+    project.start_todo_by_id(todo.id)
+    project.complete_todo_by_id(todo.id)
+    
+    # All operations should use the same fixed time
+    completed_todo = project.get_todo(todo.id)
+    assert completed_todo.created_at == fixed_time
+    assert completed_todo.updated_at == fixed_time
+    assert completed_todo.completed_at == fixed_time

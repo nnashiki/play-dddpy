@@ -17,6 +17,7 @@ from dddpy.domain.todo.value_objects import (
     TodoTitle,
 )
 from dddpy.domain.project.value_objects import ProjectId
+from dddpy.domain.shared.clock import SystemClock
 from dddpy.infrastructure.sqlite.database import Base
 
 
@@ -66,6 +67,7 @@ class TodoModel(Base):
             TodoDescription(self.description) if self.description else None,
             TodoStatus(self.status),
             dependencies,
+            SystemClock(),
             datetime.fromtimestamp(self.created_at / 1000, tz=timezone.utc),
             datetime.fromtimestamp(self.updated_at / 1000, tz=timezone.utc),
             datetime.fromtimestamp(self.completed_at / 1000, tz=timezone.utc)

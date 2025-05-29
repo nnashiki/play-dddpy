@@ -1,7 +1,9 @@
 """Project entity that acts as an aggregate root containing multiple Todos."""
 
 from datetime import datetime
-from typing import Dict, List, Mapping, Optional, Set
+from typing import Dict, List, Mapping, Optional
+
+from dddpy.domain.shared.clock import Clock, SystemClock
 
 from dddpy.domain.project.value_objects import ProjectId, ProjectName, ProjectDescription
 from dddpy.domain.project.exceptions import (
@@ -39,6 +41,7 @@ class Project:
         name: ProjectName,
         description: Optional[ProjectDescription] = None,
         todos: Optional[Dict[TodoId, Todo]] = None,
+        clock: Optional[Clock] = None,
         created_at: Optional[datetime] = None,
         updated_at: Optional[datetime] = None,
     ):
@@ -47,8 +50,9 @@ class Project:
         self._name = name
         self._description = description or ProjectDescription(None)
         self._todos = todos or {}
-        self._created_at = created_at or datetime.now()
-        self._updated_at = updated_at or datetime.now()
+        self._clock = clock or SystemClock()
+        self._created_at = created_at or self._clock.now()
+        self._updated_at = updated_at or self._clock.now()
 
     def __eq__(self, obj: object) -> bool:
         if isinstance(obj, Project):
@@ -93,12 +97,12 @@ class Project:
     def update_name(self, new_name: ProjectName) -> None:
         """Update the Project's name"""
         self._name = new_name
-        self._updated_at = datetime.now()
+        self._updated_at = self._clock.now()
 
     def update_description(self, new_description: ProjectDescription) -> None:
         """Update the Project's description"""
         self._description = new_description
-        self._updated_at = datetime.now()
+        self._updated_at = self._clock.now()
 
     def add_todo(
         self,
@@ -121,14 +125,14 @@ class Project:
             deps = None
 
         # Create todo with project_id
-        todo = Todo.create(title, self._id, description, deps)
+        todo = Todo.create(title, self._id, description, deps, self._clock)
         
         # Validate no circular dependencies
         if dependencies:
             self._validate_no_circular_dependency(todo.id, dependencies)
 
         self._todos[todo.id] = todo
-        self._updated_at = datetime.now()
+        self._updated_at = self._clock.now()
         return todo
 
     def remove_todo(self, todo_id: TodoId) -> None:
@@ -146,7 +150,7 @@ class Project:
             raise TodoRemovalNotAllowedError(str(todo_id.value), dependent_todos)
         
         del self._todos[todo_id]
-        self._updated_at = datetime.now()
+        self._updated_at = self._clock.now()
 
     def get_todo(self, todo_id: TodoId) -> Todo:
         """Get a Todo by its ID"""
@@ -186,7 +190,7 @@ class Project:
             deps = TodoDependencies.from_list(dependencies, self_id=todo_id)
             todo._set_dependencies(deps)
         
-        self._updated_at = datetime.now()
+        self._updated_at = self._clock.now()
         return todo
 
     def start_todo_by_id(self, todo_id: TodoId) -> Todo:
@@ -201,7 +205,7 @@ class Project:
             raise TodoDependencyNotCompletedError('Cannot start todo because dependencies are not completed')
         
         todo.start()
-        self._updated_at = datetime.now()
+        self._updated_at = self._clock.now()
         return todo
 
     def complete_todo_by_id(self, todo_id: TodoId) -> Todo:
@@ -211,7 +215,7 @@ class Project:
         
         todo = self._todos[todo_id]
         todo.complete()
-        self._updated_at = datetime.now()
+        self._updated_at = self._clock.now()
         return todo
 
     def _validate_dependencies_exist(self, dependency_ids: List[TodoId]) -> None:
@@ -293,6 +297,7 @@ class Project:
         todos: Dict[TodoId, Todo],
         created_at: datetime,
         updated_at: datetime,
+        clock: Optional[Clock] = None,
     ) -> 'Project':
         """Create a Project from persistence data (for infrastructure layer)"""
         project_name = ProjectName(name)
@@ -303,6 +308,7 @@ class Project:
             name=project_name,
             description=project_description,
             todos=todos,
+            clock=clock,
             created_at=created_at,
             updated_at=updated_at,
         )
