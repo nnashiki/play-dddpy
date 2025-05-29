@@ -26,23 +26,6 @@ class ProjectTodoSchema(BaseModel):
         from_attributes = True
 
     @staticmethod
-    def from_entity(todo: Todo, project_id: str) -> 'ProjectTodoSchema':
-        """Convert a Todo entity to a ProjectTodoSchema."""
-        return ProjectTodoSchema(
-            id=str(todo.id.value),
-            title=todo.title.value if todo.title else '',
-            description=todo.description.value if todo.description else '',
-            status=todo.status.value,
-            dependencies=[str(dep_id.value) for dep_id in todo.dependencies.values],
-            project_id=project_id,
-            created_at=int(todo.created_at.timestamp() * 1000),
-            updated_at=int(todo.updated_at.timestamp() * 1000),
-            completed_at=int(todo.completed_at.timestamp() * 1000)
-            if todo.completed_at
-            else None,
-        )
-
-    @staticmethod
     def from_dto(dto: TodoOutputDto, project_id: str) -> 'ProjectTodoSchema':
         """Convert a TodoOutputDto to a ProjectTodoSchema."""
         return ProjectTodoSchema(
