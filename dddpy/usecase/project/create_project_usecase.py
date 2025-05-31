@@ -28,12 +28,14 @@ class CreateProjectUseCaseImpl(CreateProjectUseCase):
         """execute creates a new Project."""
         # Validate project name uniqueness using domain service
         name_vo = ProjectName(dto.name)
-        if not ProjectDomainService.is_project_name_unique(name_vo, self.project_repository):
+        if not ProjectDomainService.is_project_name_unique(
+            name_vo, self.project_repository
+        ):
             raise ValueError(f"Project name '{dto.name}' already exists")
-        
+
         # Create project
         project = Project.create(dto.name, dto.description)
-        
+
         # Save project
         self.project_repository.save(project)
 
@@ -48,6 +50,8 @@ class CreateProjectUseCaseImpl(CreateProjectUseCase):
         )
 
 
-def new_create_project_usecase(project_repository: ProjectRepository) -> CreateProjectUseCase:
+def new_create_project_usecase(
+    project_repository: ProjectRepository,
+) -> CreateProjectUseCase:
     """Create a new instance of CreateProjectUseCase."""
     return CreateProjectUseCaseImpl(project_repository)

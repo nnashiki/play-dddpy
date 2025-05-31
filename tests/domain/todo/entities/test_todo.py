@@ -93,7 +93,9 @@ def test_update_description(project_id):
 
 def test_clear_description(project_id):
     """Test clearing Todo description."""
-    todo = Todo.create(TodoTitle('Test Todo'), project_id, TodoDescription('Original Description'))
+    todo = Todo.create(
+        TodoTitle('Test Todo'), project_id, TodoDescription('Original Description')
+    )
 
     todo.update_description(None)
 

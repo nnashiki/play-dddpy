@@ -41,7 +41,7 @@ class AddTodoToProjectUseCaseImpl(AddTodoToProjectUseCase):
         # Convert DTO to domain objects
         title = TodoTitle(dto.title)
         description = TodoDescription(dto.description) if dto.description else None
-        
+
         # Convert dependencies
         dependencies = None
         if dto.dependencies:
@@ -49,7 +49,7 @@ class AddTodoToProjectUseCaseImpl(AddTodoToProjectUseCase):
 
         # Add todo to project (with validation)
         todo = project.add_todo(title, description, dependencies)
-        
+
         # Save project with new todo
         self.project_repository.save(project)
 
@@ -57,6 +57,8 @@ class AddTodoToProjectUseCaseImpl(AddTodoToProjectUseCase):
         return ProjectTodoAssembler.to_output_dto(todo)
 
 
-def new_add_todo_to_project_usecase(project_repository: ProjectRepository) -> AddTodoToProjectUseCase:
+def new_add_todo_to_project_usecase(
+    project_repository: ProjectRepository,
+) -> AddTodoToProjectUseCase:
     """Create a new instance of AddTodoToProjectUseCase."""
     return AddTodoToProjectUseCaseImpl(project_repository)

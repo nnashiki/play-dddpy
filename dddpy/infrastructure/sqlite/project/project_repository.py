@@ -24,39 +24,34 @@ class ProjectRepositoryImpl(ProjectRepository):
     def find_by_id(self, project_id: ProjectId) -> Optional[Project]:
         """Find a Project by its ID."""
         try:
-            project_row = self.session.query(ProjectModel).filter_by(id=project_id.value).one()
+            project_row = (
+                self.session.query(ProjectModel).filter_by(id=project_id.value).one()
+            )
         except NoResultFound:
             return None
 
         # Mapper で Project + Todos を組み立て
         todo_rows = (
-            self.session.query(TodoModel)
-            .filter_by(project_id=project_id.value)
-            .all()
+            self.session.query(TodoModel).filter_by(project_id=project_id.value).all()
         )
         return ProjectMapper.to_entity(project_row, todo_rows)
 
     def find_all(self, limit: Optional[int] = None) -> List[Project]:
         """Retrieve all Project items with optional limit."""
-        query = (
-            self.session.query(ProjectModel)
-            .order_by(desc(ProjectModel.created_at))
-        )
-        
+        query = self.session.query(ProjectModel).order_by(desc(ProjectModel.created_at))
+
         if limit is not None:
             query = query.limit(limit)
-        
+
         project_rows = query.all()
-        
+
         projects = []
         for project_row in project_rows:
             todo_rows = (
-                self.session.query(TodoModel)
-                .filter_by(project_id=project_row.id)
-                .all()
+                self.session.query(TodoModel).filter_by(project_id=project_row.id).all()
             )
             projects.append(ProjectMapper.to_entity(project_row, todo_rows))
-        
+
         return projects
 
     def save(self, project: Project) -> None:
@@ -109,7 +104,7 @@ class ProjectRepositoryImpl(ProjectRepository):
         """Delete a Project and all its todos."""
         # Delete all todos in the project first
         self.session.query(TodoModel).filter_by(project_id=project_id.value).delete()
-        
+
         # Delete the project
         self.session.query(ProjectModel).filter_by(id=project_id.value).delete()
 

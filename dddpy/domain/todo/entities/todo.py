@@ -17,7 +17,7 @@ from dddpy.domain.todo.exceptions import (
     TodoAlreadyStartedError,
     TodoNotFoundError,
     TodoNotStartedError,
-    SelfDependencyError
+    SelfDependencyError,
 )
 
 if TYPE_CHECKING:
@@ -185,4 +185,11 @@ class Todo:
         clock: Optional[Clock] = None,
     ) -> 'Todo':
         """Create a new Todo"""
-        return Todo(TodoId.generate(), title, project_id, description, dependencies=dependencies, clock=clock)
+        return Todo(
+            TodoId.generate(),
+            title,
+            project_id,
+            description,
+            dependencies=dependencies,
+            clock=clock,
+        )

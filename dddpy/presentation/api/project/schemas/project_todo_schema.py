@@ -15,7 +15,9 @@ class ProjectTodoSchema(BaseModel):
     description: str = Field(examples=['Finish implementing the DDD architecture'])
     status: str = Field(examples=['not_started'])
     dependencies: List[str] = Field(examples=[['456e4567-e89b-12d3-a456-426614174001']])
-    project_id: str = Field(examples=['789e4567-e89b-12d3-a456-426614174002'])  # Added for clarity
+    project_id: str = Field(
+        examples=['789e4567-e89b-12d3-a456-426614174002']
+    )  # Added for clarity
     created_at: int = Field(examples=[1136214245000])
     updated_at: int = Field(examples=[1136214245000])
     completed_at: int | None = Field(examples=[1136214245000])

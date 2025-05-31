@@ -27,19 +27,19 @@ class StartTodoThroughProjectUseCaseImpl(StartTodoThroughProjectUseCase):
     def execute(self, project_id: str, todo_id: str) -> TodoOutputDto:
         """execute starts a Todo through Project aggregate."""
         from dddpy.domain.project.value_objects import ProjectId
-        
+
         _project_id = ProjectId(UUID(project_id))
         _todo_id = TodoId(UUID(todo_id))
-        
+
         # Find the project by ID
         project = self.project_repository.find_by_id(_project_id)
-        
+
         if project is None:
             raise ProjectNotFoundError()
-        
+
         # Start todo through project
         updated_todo = project.start_todo_by_id(_todo_id)
-        
+
         # Save project with updated todo
         self.project_repository.save(project)
 
@@ -47,6 +47,8 @@ class StartTodoThroughProjectUseCaseImpl(StartTodoThroughProjectUseCase):
         return ProjectTodoAssembler.to_output_dto(updated_todo)
 
 
-def new_start_todo_through_project_usecase(project_repository: ProjectRepository) -> StartTodoThroughProjectUseCase:
+def new_start_todo_through_project_usecase(
+    project_repository: ProjectRepository,
+) -> StartTodoThroughProjectUseCase:
     """Create a new instance of StartTodoThroughProjectUseCase."""
     return StartTodoThroughProjectUseCaseImpl(project_repository)

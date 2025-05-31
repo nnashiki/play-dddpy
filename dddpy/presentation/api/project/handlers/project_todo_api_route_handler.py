@@ -36,39 +36,41 @@ class ProjectTodoApiRouteHandler:
 
     def register_routes(self, app: FastAPI) -> None:  # noqa: D401
         """Register all Project Todo routes."""
-        
+
         # ------------------------------------------------------------------ #
         #  GET /projects/{project_id}/todos  – list todos in project         #
         # ------------------------------------------------------------------ #
         @app.get(
-            '/projects/{project_id}/todos', 
-            response_model=List[ProjectTodoSchema], 
+            '/projects/{project_id}/todos',
+            response_model=List[ProjectTodoSchema],
             status_code=200,
-            responses={status.HTTP_404_NOT_FOUND: {'model': ErrorMessageProjectNotFound}}
+            responses={
+                status.HTTP_404_NOT_FOUND: {'model': ErrorMessageProjectNotFound}
+            },
         )
-        def get_project_todos(                       # pylint: disable=unused-variable
+        def get_project_todos(  # pylint: disable=unused-variable
             project_id: UUID,
             usecase: FindProjectsUseCase = Depends(get_find_projects_usecase),
         ):
             # Find the specific project
             from dddpy.domain.project.value_objects import ProjectId
             from dddpy.domain.project.exceptions import ProjectNotFoundError
-            
+
             _project_id = ProjectId(project_id)
             project_outputs = usecase.execute()
-            
+
             # Filter to find the specific project
             target_project = None
             for project in project_outputs:
                 if project.id == str(project_id):
                     target_project = project
                     break
-            
+
             if target_project is None:
                 raise ProjectNotFoundError()
-            
+
             return [
-                ProjectTodoSchema.from_dto(todo, str(project_id)) 
+                ProjectTodoSchema.from_dto(todo, str(project_id))
                 for todo in target_project.todos
             ]
 
@@ -83,7 +85,7 @@ class ProjectTodoApiRouteHandler:
                 status.HTTP_404_NOT_FOUND: {'model': ErrorMessageTodoNotFound},
             },
         )
-        def get_project_todo(                        # pylint: disable=unused-variable
+        def get_project_todo(  # pylint: disable=unused-variable
             project_id: UUID,
             todo_id: UUID,
             usecase: FindTodoThroughProjectUseCase = Depends(get_find_todo_usecase),
@@ -102,7 +104,7 @@ class ProjectTodoApiRouteHandler:
                 status.HTTP_404_NOT_FOUND: {'model': ErrorMessageTodoNotFound},
             },
         )
-        def update_project_todo(                     # pylint: disable=unused-variable
+        def update_project_todo(  # pylint: disable=unused-variable
             project_id: UUID,
             todo_id: UUID,
             data: ProjectTodoUpdateSchema,
@@ -125,10 +127,12 @@ class ProjectTodoApiRouteHandler:
             status_code=200,
             responses={
                 status.HTTP_404_NOT_FOUND: {'model': ErrorMessageTodoNotFound},
-                status.HTTP_400_BAD_REQUEST: {'model': TodoDependencyNotCompletedErrorMessage},
+                status.HTTP_400_BAD_REQUEST: {
+                    'model': TodoDependencyNotCompletedErrorMessage
+                },
             },
         )
-        def start_project_todo(                      # pylint: disable=unused-variable
+        def start_project_todo(  # pylint: disable=unused-variable
             project_id: UUID,
             todo_id: UUID,
             usecase: StartTodoThroughProjectUseCase = Depends(get_start_todo_usecase),
@@ -145,10 +149,12 @@ class ProjectTodoApiRouteHandler:
             status_code=200,
             responses={status.HTTP_404_NOT_FOUND: {'model': ErrorMessageTodoNotFound}},
         )
-        def complete_project_todo(                   # pylint: disable=unused-variable
+        def complete_project_todo(  # pylint: disable=unused-variable
             project_id: UUID,
             todo_id: UUID,
-            usecase: CompleteTodoThroughProjectUseCase = Depends(get_complete_todo_usecase),
+            usecase: CompleteTodoThroughProjectUseCase = Depends(
+                get_complete_todo_usecase
+            ),
         ):
             todo_output = usecase.execute(str(project_id), str(todo_id))
             return ProjectTodoSchema.from_dto(todo_output, str(project_id))

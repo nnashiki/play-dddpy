@@ -25,5 +25,3 @@ class ProjectRepository(ABC):
     @abstractmethod
     def delete(self, project_id: ProjectId) -> None:
         """Delete a Project by ID"""
-
-

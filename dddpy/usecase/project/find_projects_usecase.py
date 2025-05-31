@@ -34,8 +34,7 @@ class FindProjectsUseCaseImpl(FindProjectsUseCase):
                 name=project.name.value,
                 description=project.description.value,
                 todos=[
-                    ProjectTodoAssembler.to_output_dto(todo)
-                    for todo in project.todos
+                    ProjectTodoAssembler.to_output_dto(todo) for todo in project.todos
                 ],
                 created_at=project.created_at,
                 updated_at=project.updated_at,
@@ -44,6 +43,8 @@ class FindProjectsUseCaseImpl(FindProjectsUseCase):
         ]
 
 
-def new_find_projects_usecase(project_repository: ProjectRepository) -> FindProjectsUseCase:
+def new_find_projects_usecase(
+    project_repository: ProjectRepository,
+) -> FindProjectsUseCase:
     """Create a new instance of FindProjectsUseCase."""
     return FindProjectsUseCaseImpl(project_repository)

@@ -4,7 +4,11 @@ from datetime import datetime, timezone
 from typing import Dict
 
 from dddpy.domain.project.entities import Project
-from dddpy.domain.project.value_objects import ProjectId, ProjectName, ProjectDescription
+from dddpy.domain.project.value_objects import (
+    ProjectId,
+    ProjectName,
+    ProjectDescription,
+)
 from dddpy.domain.todo.entities import Todo
 from dddpy.domain.todo.value_objects import TodoId
 from dddpy.domain.shared.clock import SystemClock
@@ -33,8 +37,12 @@ class ProjectMapper:
             description=ProjectDescription(project_row.description),
             todos=todos_dict,
             clock=clock,
-            created_at=datetime.fromtimestamp(project_row.created_at / 1000, tz=timezone.utc),
-            updated_at=datetime.fromtimestamp(project_row.updated_at / 1000, tz=timezone.utc),
+            created_at=datetime.fromtimestamp(
+                project_row.created_at / 1000, tz=timezone.utc
+            ),
+            updated_at=datetime.fromtimestamp(
+                project_row.updated_at / 1000, tz=timezone.utc
+            ),
         )
 
     @staticmethod

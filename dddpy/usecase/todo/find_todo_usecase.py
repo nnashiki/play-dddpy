@@ -28,15 +28,16 @@ class FindTodoThroughProjectUseCaseImpl(FindTodoThroughProjectUseCase):
     def execute(self, project_id: str, todo_id: str) -> TodoOutputDto:
         """Execute the find todo through project use case."""
         from dddpy.domain.project.value_objects import ProjectId
-        
+
         _project_id = ProjectId(UUID(project_id))
         _todo_id = TodoId(UUID(todo_id))
-        
+
         project = self.project_repository.find_by_id(_project_id)
         if project is None:
             from dddpy.domain.project.exceptions import ProjectNotFoundError
+
             raise ProjectNotFoundError()
-        
+
         todo = project.get_todo(_todo_id)
         return ProjectTodoAssembler.to_output_dto(todo)
 

@@ -102,5 +102,7 @@ class ProjectApiRouteHandler:
                 'dependencies': todo_output.dependencies,
                 'created_at': int(todo_output.created_at.timestamp() * 1000),
                 'updated_at': int(todo_output.updated_at.timestamp() * 1000),
-                'completed_at': int(todo_output.completed_at.timestamp() * 1000) if todo_output.completed_at else None,
+                'completed_at': int(todo_output.completed_at.timestamp() * 1000)
+                if todo_output.completed_at
+                else None,
             }

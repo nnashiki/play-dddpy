@@ -23,10 +23,10 @@ class ProjectTodoAssembler:
     def to_output_dto(todo: Todo) -> TodoOutputDto:
         """
         Todoエンティティから API 出力用の TodoOutputDto を生成
-        
+
         Args:
             todo: 変換対象のTodoエンティティ
-            
+
         Returns:
             TodoOutputDto: API出力用のDTO
         """
@@ -45,11 +45,11 @@ class ProjectTodoAssembler:
     def from_dto(dto: TodoOutputDto, project_id: str) -> Todo:
         """
         DTO を受け取り、ドメインエンティティ Todo を生成（主にテストや再構築用）
-        
+
         Args:
             dto: 変換元のTodoOutputDto
             project_id: プロジェクトID（文字列）
-            
+
         Returns:
             Todo: 再構築されたTodoエンティティ
         """
@@ -59,9 +59,9 @@ class ProjectTodoAssembler:
             project_id=ProjectId(UUID(project_id)),
             description=TodoDescription(dto.description) if dto.description else None,
             status=TodoStatus(dto.status),
-            dependencies=TodoDependencies.from_list([
-                TodoId(UUID(dep_id)) for dep_id in dto.dependencies
-            ]),
+            dependencies=TodoDependencies.from_list(
+                [TodoId(UUID(dep_id)) for dep_id in dto.dependencies]
+            ),
             clock=SystemClock(),
             created_at=dto.created_at,
             updated_at=dto.updated_at,

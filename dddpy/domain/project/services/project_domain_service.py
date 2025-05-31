@@ -13,7 +13,7 @@ __all__ = ['ProjectDomainService']
 
 class ProjectDomainService:
     """ドメインサービス:Projectを横断するビジネスロジックを定義"""
-    
+
     @staticmethod
     def is_project_name_unique(
         name: ProjectName, repository: 'ProjectRepository'
@@ -21,7 +21,7 @@ class ProjectDomainService:
         """既存のプロジェクト名と重複しないか検証する"""
         existing_projects = repository.find_all()
         return all(p.name != name for p in existing_projects)
-    
+
     @staticmethod
     def can_delete_project(project: 'Project') -> bool:
         """Check if a project can be deleted."""

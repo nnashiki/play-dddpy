@@ -5,7 +5,9 @@ from fastapi import Depends
 from sqlalchemy.orm import Session
 
 from dddpy.infrastructure.sqlite.database import SessionLocal
-from dddpy.infrastructure.sqlite.project.project_repository import new_project_repository
+from dddpy.infrastructure.sqlite.project.project_repository import (
+    new_project_repository,
+)
 from dddpy.domain.project.repositories import ProjectRepository
 
 from dddpy.usecase.project import (
@@ -39,7 +41,7 @@ def get_session() -> Iterator[Session]:
     try:
         yield session
         session.commit()
-    except Exception:          # pragma: no cover
+    except Exception:  # pragma: no cover
         session.rollback()
         raise
     finally:

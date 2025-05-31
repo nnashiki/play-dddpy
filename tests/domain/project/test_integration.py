@@ -10,22 +10,22 @@ def test_project_basic_functionality():
     """Test that basic Project functionality works with our changes."""
     # Create project
     project = Project.create('Test Project', 'Test Description')
-    
+
     # Verify project properties
     assert project.name.value == 'Test Project'
     assert project.description.value == 'Test Description'
     assert len(project.todos) == 0
-    
+
     # Add a todo
     todo = project.add_todo(TodoTitle('Test Todo'))
     assert len(project.todos) == 1
     assert todo.title.value == 'Test Todo'
-    
+
     # Start and complete todo
     project.start_todo_by_id(todo.id)
     retrieved_todo = project.get_todo(todo.id)
     assert retrieved_todo.status.value == 'in_progress'
-    
+
     project.complete_todo_by_id(todo.id)
     retrieved_todo = project.get_todo(todo.id)
     assert retrieved_todo.status.value == 'completed'
@@ -37,11 +37,11 @@ def test_project_value_objects():
     # Test ProjectName
     name = ProjectName('Test Name')
     assert name.value == 'Test Name'
-    
+
     # Test ProjectDescription
     desc = ProjectDescription('Test Description')
     assert desc.value == 'Test Description'
-    
+
     # Test None description
     desc_none = ProjectDescription(None)
     assert desc_none.value is None
@@ -52,7 +52,7 @@ def test_project_name_validation():
     # Empty name should raise error
     with pytest.raises(ValueError):
         ProjectName('')
-    
+
     # Too long name should raise error
     with pytest.raises(ValueError):
         ProjectName('a' * 101)

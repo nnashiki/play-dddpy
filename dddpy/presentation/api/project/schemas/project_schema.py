@@ -38,7 +38,9 @@ class ProjectSchema(BaseModel):
                     'project_id': dto.id,  # Added for DDD clarity
                     'created_at': int(todo.created_at.timestamp() * 1000),
                     'updated_at': int(todo.updated_at.timestamp() * 1000),
-                    'completed_at': int(todo.completed_at.timestamp() * 1000) if todo.completed_at else None,
+                    'completed_at': int(todo.completed_at.timestamp() * 1000)
+                    if todo.completed_at
+                    else None,
                 }
                 for todo in dto.todos
             ],
