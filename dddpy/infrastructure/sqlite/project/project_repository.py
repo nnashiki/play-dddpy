@@ -11,6 +11,7 @@ from dddpy.domain.project.value_objects import ProjectId
 from dddpy.infrastructure.sqlite.project.project_mapper import ProjectMapper
 from dddpy.infrastructure.sqlite.project.project_model import ProjectModel
 from dddpy.infrastructure.sqlite.todo.todo_model import TodoModel
+from dddpy.infrastructure.sqlite.todo.todo_mapper import TodoMapper
 
 
 class ProjectRepositoryImpl(ProjectRepository):
@@ -69,9 +70,9 @@ class ProjectRepositoryImpl(ProjectRepository):
             # Create new project
             self.session.add(project_dto)
 
-        # Save all todos
+        # Save all todos using TodoMapper
         for todo in project.todos:
-            todo_dto = TodoModel.from_entity(todo)
+            todo_dto = TodoMapper.from_entity(todo)
             try:
                 existing_todo = (
                     self.session.query(TodoModel).filter_by(id=todo.id.value).one()
@@ -90,12 +91,21 @@ class ProjectRepositoryImpl(ProjectRepository):
 
         # Remove todos that are no longer in the project
         existing_todo_ids = {todo.id.value for todo in project.todos}
-        todos_to_delete = (
-            self.session.query(TodoModel)
-            .filter_by(project_id=project.id.value)
-            .filter(~TodoModel.id.in_(existing_todo_ids))
-            .all()
-        )
+        if existing_todo_ids:
+            todos_to_delete = (
+                self.session.query(TodoModel)
+                .filter_by(project_id=project.id.value)
+                .filter(~TodoModel.id.in_(existing_todo_ids))
+                .all()
+            )
+        else:
+            # If no todos exist in project, delete all todos for this project
+            todos_to_delete = (
+                self.session.query(TodoModel)
+                .filter_by(project_id=project.id.value)
+                .all()
+            )
+        
         for todo_to_delete in todos_to_delete:
             self.session.delete(todo_to_delete)
 

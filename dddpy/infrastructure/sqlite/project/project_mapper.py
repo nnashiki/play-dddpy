@@ -13,6 +13,7 @@ from dddpy.domain.todo.entities import Todo
 from dddpy.domain.todo.value_objects import TodoId
 
 from ..todo.todo_model import TodoModel
+from ..todo.todo_mapper import TodoMapper
 from .project_model import ProjectModel
 
 
@@ -27,7 +28,7 @@ class ProjectMapper:
     ) -> Project:
         """DTO → ドメインエンティティ（集約完成形で返す）"""
         todos_dict: dict[TodoId, Todo] = {
-            TodoId(t.id): t.to_entity() for t in todo_rows
+            TodoId(t.id): TodoMapper.to_entity(t, clock) for t in todo_rows
         }
 
         return Project(

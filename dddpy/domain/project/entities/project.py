@@ -29,6 +29,8 @@ from dddpy.domain.todo.value_objects import (
 from dddpy.domain.todo.value_objects import (
     TodoDescription as TodoDescriptionVO,
 )
+from dddpy.domain.shared.events import get_event_publisher
+from dddpy.domain.todo.events import TodoAddedToProjectEvent
 
 
 class Project:
@@ -136,6 +138,33 @@ class Project:
         self._todos[todo.id] = todo
         self._updated_at = self._clock.now()
         return todo
+
+    def add_todo_entity(self, todo: Todo) -> None:
+        """Add an existing Todo entity to the project with validation
+        """
+        # Validate that the todo belongs to this project
+        if todo.project_id != self._id:
+            raise ValueError(f"Todo project_id {todo.project_id} does not match this project {self._id}")
+            
+        # Validate todo count limit
+        self._validate_todo_limit()
+
+        # Validate no duplicate title
+        self._validate_no_duplicate_title(todo.title)
+
+        # Validate dependencies exist within this project
+        if not todo.dependencies.is_empty():
+            self._validate_dependencies_exist(list(todo.dependencies.values))
+            
+            # Validate no circular dependencies
+            self._validate_no_circular_dependency(todo.id, list(todo.dependencies.values))
+
+        # Add todo to project
+        self._todos[todo.id] = todo
+        self._updated_at = self._clock.now()
+        
+        # Publish domain event
+        self._publish_todo_added_event(todo)
 
     def remove_todo(self, todo_id: TodoId) -> None:
         """Remove a Todo from the project"""
@@ -292,6 +321,17 @@ class Project:
         for todo_id, todo in self._todos.items():
             if todo_id != exclude_todo_id and todo.title.value == title.value:
                 raise DuplicateTodoTitleError(title.value)
+
+    def _publish_todo_added_event(self, todo: Todo) -> None:
+        """Publish TodoAddedToProjectEvent when a todo is added to the project."""
+        event_publisher = get_event_publisher()
+        event = TodoAddedToProjectEvent(
+            project_id=self._id.value,
+            todo_id=todo.id.value,
+            todo_title=todo.title.value,
+            occurred_at=self._updated_at,
+        )
+        event_publisher.publish(event)
 
     @staticmethod
     def create(name: str, description: str | None = None) -> 'Project':

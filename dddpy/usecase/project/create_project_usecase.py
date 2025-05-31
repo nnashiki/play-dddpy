@@ -7,6 +7,7 @@ from dddpy.domain.project.repositories import ProjectRepository
 from dddpy.domain.project.services import ProjectDomainService
 from dddpy.domain.project.value_objects import ProjectName
 from dddpy.dto.project import ProjectCreateDto, ProjectOutputDto
+from dddpy.usecase.assembler.project_create_assembler import ProjectCreateAssembler
 
 
 class CreateProjectUseCase(ABC):
@@ -32,8 +33,8 @@ class CreateProjectUseCaseImpl(CreateProjectUseCase):
         ):
             raise ValueError(f"Project name '{dto.name}' already exists")
 
-        # Create project
-        project = Project.create(dto.name, dto.description)
+        # Create project using new Assembler → Factory flow
+        project = ProjectCreateAssembler.to_entity(dto)
 
         # Save project
         self.project_repository.save(project)

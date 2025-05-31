@@ -6,14 +6,10 @@ from uuid import UUID
 from dddpy.domain.project.exceptions import ProjectNotFoundError
 from dddpy.domain.project.repositories import ProjectRepository
 from dddpy.domain.project.value_objects import ProjectId
-from dddpy.domain.todo.value_objects import (
-    TodoDescription,
-    TodoId,
-    TodoTitle,
-)
 from dddpy.dto.project import AddTodoToProjectDto
 from dddpy.dto.todo import TodoOutputDto
 from dddpy.usecase.converter.todo_converter import TodoConverter
+from dddpy.usecase.assembler.todo_create_assembler import TodoCreateAssembler
 
 
 class AddTodoToProjectUseCase(ABC):
@@ -38,23 +34,14 @@ class AddTodoToProjectUseCaseImpl(AddTodoToProjectUseCase):
         if project is None:
             raise ProjectNotFoundError()
 
-        # Convert DTO to domain objects
-        title = TodoTitle(dto.title)
-        description = TodoDescription(dto.description) if dto.description else None
-
-        # Convert dependencies
-        dependencies = None
-        if dto.dependencies:
-            dependencies = [TodoId(UUID(dep_id)) for dep_id in dto.dependencies]
-
-        # Add todo to project (with validation)
-        todo = project.add_todo(title, description, dependencies)
+        todo_entity = TodoCreateAssembler.to_entity(dto, project_id)
+        project.add_todo_entity(todo_entity)
 
         # Save project with new todo
         self.project_repository.save(project)
 
         # Convert to output DTO using Converter (Application 層)
-        return TodoConverter.to_output_dto(todo)
+        return TodoConverter.to_output_dto(todo_entity)
 
 
 def new_add_todo_to_project_usecase(

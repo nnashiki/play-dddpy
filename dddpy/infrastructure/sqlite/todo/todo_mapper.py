@@ -23,10 +23,12 @@ class TodoMapper:
     @staticmethod
     def to_entity(todo_row: TodoModel, clock=SystemClock()) -> Todo:
         """DTO → ドメインエンティティ"""
+        # dependenciesが空またはNoneの場合は空のdependenciesを設定
         dependencies = TodoDependencies.empty()
-        dependencies = TodoDependencies.from_list(
-            [TodoId(UUID(dep_id)) for dep_id in todo_row.dependencies.split(',')]
-        )
+        if todo_row.dependencies and todo_row.dependencies.strip():
+            dep_ids = [TodoId(UUID(dep_id.strip())) for dep_id in todo_row.dependencies.split(',') if dep_id.strip()]
+            if dep_ids:
+                dependencies = TodoDependencies.from_list(dep_ids)
 
         return Todo(
             id=TodoId(todo_row.id),
@@ -54,9 +56,11 @@ class TodoMapper:
     @staticmethod
     def from_entity(todo: Todo) -> TodoModel:
         """ドメインエンティティ → DTO"""
+        # dependenciesが空の場合は空文字列を設定
         dependencies = ','.join(
             [str(dep_id.value) for dep_id in todo.dependencies.values]
-        )
+        ) if todo.dependencies.values else ''
+        
         return TodoModel(
             id=todo.id.value,
             project_id=todo.project_id.value,
