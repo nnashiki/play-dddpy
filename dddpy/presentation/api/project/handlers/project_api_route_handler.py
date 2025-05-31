@@ -18,6 +18,7 @@ from dddpy.presentation.api.project.schemas import (
     ProjectSchema,
     AddTodoToProjectSchema,
 )
+from dddpy.presentation.assembler.project_assembler import ProjectAssembler
 from dddpy.usecase.project import (
     CreateProjectUseCase,
     AddTodoToProjectUseCase,
@@ -41,7 +42,7 @@ class ProjectApiRouteHandler:
             usecase: FindProjectsUseCase = Depends(get_find_projects_usecase),
         ):
             project_outputs = usecase.execute()
-            return [ProjectSchema.from_dto(project) for project in project_outputs]
+            return [ProjectAssembler.to_schema(project) for project in project_outputs]
 
         @app.delete('/projects/{project_id}', status_code=204)
         def delete_project(
@@ -66,7 +67,7 @@ class ProjectApiRouteHandler:
             )
 
             project_output = usecase.execute(dto)
-            return ProjectSchema.from_dto(project_output)
+            return ProjectAssembler.to_schema(project_output)
 
         @app.post(
             '/projects/{project_id}/todos',

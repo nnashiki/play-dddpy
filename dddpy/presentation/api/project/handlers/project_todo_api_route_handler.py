@@ -22,6 +22,7 @@ from dddpy.presentation.api.project.schemas.project_todo_schema import (
     ProjectTodoSchema,
     ProjectTodoUpdateSchema,
 )
+from dddpy.presentation.assembler.project_todo_assembler import ProjectTodoAssembler
 from dddpy.usecase.project import (
     StartTodoThroughProjectUseCase,
     CompleteTodoThroughProjectUseCase,
@@ -70,7 +71,7 @@ class ProjectTodoApiRouteHandler:
                 raise ProjectNotFoundError()
 
             return [
-                ProjectTodoSchema.from_dto(todo, str(project_id))
+                ProjectTodoAssembler.to_schema(todo, str(project_id))
                 for todo in target_project.todos
             ]
 
@@ -91,7 +92,7 @@ class ProjectTodoApiRouteHandler:
             usecase: FindTodoThroughProjectUseCase = Depends(get_find_todo_usecase),
         ):
             output = usecase.execute(str(project_id), str(todo_id))
-            return ProjectTodoSchema.from_dto(output, str(project_id))
+            return ProjectTodoAssembler.to_schema(output, str(project_id))
 
         # ------------------------------------------------------------------ #
         #  PUT /projects/{project_id}/todos/{todo_id} – update todo          #
@@ -116,7 +117,7 @@ class ProjectTodoApiRouteHandler:
                 dependencies=data.dependencies,
             )
             todo_output = usecase.execute(str(project_id), str(todo_id), dto)
-            return ProjectTodoSchema.from_dto(todo_output, str(project_id))
+            return ProjectTodoAssembler.to_schema(todo_output, str(project_id))
 
         # ------------------------------------------------------------------ #
         #  PATCH /projects/{project_id}/todos/{todo_id}/start – start todo   #
@@ -138,7 +139,7 @@ class ProjectTodoApiRouteHandler:
             usecase: StartTodoThroughProjectUseCase = Depends(get_start_todo_usecase),
         ):
             todo_output = usecase.execute(str(project_id), str(todo_id))
-            return ProjectTodoSchema.from_dto(todo_output, str(project_id))
+            return ProjectTodoAssembler.to_schema(todo_output, str(project_id))
 
         # ------------------------------------------------------------------ #
         #  PATCH /projects/{project_id}/todos/{todo_id}/complete – complete  #
@@ -157,4 +158,4 @@ class ProjectTodoApiRouteHandler:
             ),
         ):
             todo_output = usecase.execute(str(project_id), str(todo_id))
-            return ProjectTodoSchema.from_dto(todo_output, str(project_id))
+            return ProjectTodoAssembler.to_schema(todo_output, str(project_id))

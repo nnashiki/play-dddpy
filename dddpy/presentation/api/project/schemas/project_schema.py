@@ -2,8 +2,7 @@
 
 from typing import List, Optional
 from pydantic import BaseModel, Field
-
-from dddpy.dto.project import ProjectOutputDto
+from dddpy.presentation.api.project.schemas.project_todo_schema import ProjectTodoSchema
 
 
 class ProjectSchema(BaseModel):
@@ -12,7 +11,7 @@ class ProjectSchema(BaseModel):
     id: str = Field(examples=['123e4567-e89b-12d3-a456-426614174000'])
     name: str = Field(examples=['My Project'])
     description: str = Field(examples=['A sample project for demonstration'])
-    todos: List[dict] = Field(examples=[[]])
+    todos: List[ProjectTodoSchema] = Field(examples=[[]])
     created_at: int = Field(examples=[1136214245000])
     updated_at: int = Field(examples=[1136214245000])
 
@@ -20,33 +19,6 @@ class ProjectSchema(BaseModel):
         """Configuration for Pydantic model."""
 
         from_attributes = True
-
-    @staticmethod
-    def from_dto(dto: ProjectOutputDto) -> 'ProjectSchema':
-        """Convert a ProjectOutputDto to a ProjectSchema."""
-        return ProjectSchema(
-            id=dto.id,
-            name=dto.name,
-            description=dto.description or '',
-            todos=[
-                {
-                    'id': todo.id,
-                    'title': todo.title,
-                    'description': todo.description or '',
-                    'status': todo.status,
-                    'dependencies': todo.dependencies,
-                    'project_id': dto.id,  # Added for DDD clarity
-                    'created_at': int(todo.created_at.timestamp() * 1000),
-                    'updated_at': int(todo.updated_at.timestamp() * 1000),
-                    'completed_at': int(todo.completed_at.timestamp() * 1000)
-                    if todo.completed_at
-                    else None,
-                }
-                for todo in dto.todos
-            ],
-            created_at=int(dto.created_at.timestamp() * 1000),
-            updated_at=int(dto.updated_at.timestamp() * 1000),
-        )
 
 
 class ProjectCreateSchema(BaseModel):
