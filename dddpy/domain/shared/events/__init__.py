@@ -9,7 +9,7 @@ from uuid import UUID, uuid4
 class DomainEvent(ABC):
     """Base class for all domain events."""
     
-    def __init__(self, aggregate_id: UUID, occurred_at: datetime | None = None):
+    def __init__(self, aggregate_id: UUID, occurred_at: datetime | None = None) -> None:
         self.event_id = uuid4()
         self.aggregate_id = aggregate_id
         self.occurred_at = occurred_at or datetime.now()
@@ -32,7 +32,7 @@ class DomainEvent(ABC):
 class DomainEventPublisher:
     """Simple domain event publisher for collecting and publishing events."""
     
-    def __init__(self):
+    def __init__(self) -> None:
         self._events: list[DomainEvent] = []
     
     def publish(self, event: DomainEvent) -> None:
@@ -49,7 +49,7 @@ class DomainEventPublisher:
 
 
 # Global event publisher instance
-_event_publisher = DomainEventPublisher()
+_event_publisher: DomainEventPublisher = DomainEventPublisher()
 
 
 def get_event_publisher() -> DomainEventPublisher:

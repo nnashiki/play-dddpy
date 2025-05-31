@@ -17,7 +17,7 @@ class TodoCreatedEvent(DomainEvent):
         title: str,
         description: str | None = None,
         occurred_at: datetime | None = None,
-    ):
+    ) -> None:
         super().__init__(todo_id, occurred_at)
         self.todo_id = todo_id
         self.project_id = project_id
@@ -48,7 +48,7 @@ class TodoAddedToProjectEvent(DomainEvent):
         todo_id: UUID,
         todo_title: str,
         occurred_at: datetime | None = None,
-    ):
+    ) -> None:
         super().__init__(project_id, occurred_at)
         self.project_id = project_id
         self.todo_id = todo_id

@@ -98,7 +98,8 @@ class TodoFactoryProvider:
         Raises:
             ValueError: If factory_type is not supported
         """
-        factories = {
+        # ✅ 型を統一：すべてAbstractTodoFactoryとして扱う
+        factories: dict[str, AbstractTodoFactory] = {
             "standard": StandardTodoFactory(),
             "high_priority": HighPriorityTodoFactory(),
         }

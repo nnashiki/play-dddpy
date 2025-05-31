@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 
 from dddpy.domain.shared.clock import Clock
 from dddpy.domain.todo.entities import Todo
-from dddpy.domain.todo.factories import TodoFactory
+from dddpy.domain.todo.factories.todo_factory import TodoFactory  # 直接インポート
 from dddpy.domain.todo.factories.event_aware_todo_factory import EventAwareTodoFactory
 from dddpy.domain.todo.factories.abstract_todo_factory import (
     StandardTodoFactory,
@@ -59,12 +59,12 @@ class TodoFactorySelector:
             ValueError: If strategy is not supported
         """
         if strategy == TodoCreationStrategy.STANDARD:
-            factory = StandardTodoFactory()
-            return factory.create_todo(title, project_id, description, dependencies, clock)
+            standard_factory = StandardTodoFactory()
+            return standard_factory.create_todo(title, project_id, description, dependencies, clock)
             
         elif strategy == TodoCreationStrategy.HIGH_PRIORITY:
-            factory = HighPriorityTodoFactory()
-            return factory.create_todo(title, project_id, description, dependencies, clock)
+            high_priority_factory = HighPriorityTodoFactory()
+            return high_priority_factory.create_todo(title, project_id, description, dependencies, clock)
             
         elif strategy == TodoCreationStrategy.EVENT_AWARE:
             return EventAwareTodoFactory.create(title, project_id, description, dependencies, clock)
