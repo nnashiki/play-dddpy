@@ -1,20 +1,19 @@
 """Project <-> ProjectModel 変換責務を集約する Mapper."""
 
-from datetime import datetime, timezone
-from typing import Dict
+from datetime import UTC, datetime
 
 from dddpy.domain.project.entities import Project
 from dddpy.domain.project.value_objects import (
+    ProjectDescription,
     ProjectId,
     ProjectName,
-    ProjectDescription,
 )
+from dddpy.domain.shared.clock import SystemClock
 from dddpy.domain.todo.entities import Todo
 from dddpy.domain.todo.value_objects import TodoId
-from dddpy.domain.shared.clock import SystemClock
 
-from .project_model import ProjectModel
 from ..todo.todo_model import TodoModel
+from .project_model import ProjectModel
 
 
 class ProjectMapper:
@@ -27,7 +26,7 @@ class ProjectMapper:
         clock=SystemClock(),
     ) -> Project:
         """DTO → ドメインエンティティ（集約完成形で返す）"""
-        todos_dict: Dict[TodoId, Todo] = {
+        todos_dict: dict[TodoId, Todo] = {
             TodoId(t.id): t.to_entity() for t in todo_rows
         }
 
@@ -38,10 +37,10 @@ class ProjectMapper:
             todos=todos_dict,
             clock=clock,
             created_at=datetime.fromtimestamp(
-                project_row.created_at / 1000, tz=timezone.utc
+                project_row.created_at / 1000, tz=UTC
             ),
             updated_at=datetime.fromtimestamp(
-                project_row.updated_at / 1000, tz=timezone.utc
+                project_row.updated_at / 1000, tz=UTC
             ),
         )
 

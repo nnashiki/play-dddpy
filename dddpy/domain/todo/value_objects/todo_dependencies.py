@@ -1,17 +1,16 @@
 """Value object for Todo dependencies."""
 
 from dataclasses import dataclass
-from typing import Set, Optional
 
-from .todo_id import TodoId
 from ..exceptions import SelfDependencyError, TooManyDependenciesError
+from .todo_id import TodoId
 
 
 @dataclass(frozen=True)
 class TodoDependencies:
     """Value object representing dependencies of a Todo"""
 
-    values: Set[TodoId]
+    values: set[TodoId]
 
     def __post_init__(self) -> None:
         """Validate the dependencies after initialization"""
@@ -25,7 +24,7 @@ class TodoDependencies:
 
     @staticmethod
     def from_list(
-        todo_ids: list[TodoId], self_id: Optional[TodoId] = None
+        todo_ids: list[TodoId], self_id: TodoId | None = None
     ) -> 'TodoDependencies':
         """Create dependencies from a list of TodoIds (duplicates will be removed)
 

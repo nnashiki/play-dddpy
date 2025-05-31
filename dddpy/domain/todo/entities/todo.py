@@ -1,23 +1,21 @@
 """This module provides the Todo entity representing a task or item to be completed."""
 
 from datetime import datetime
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from dddpy.domain.shared.clock import Clock, SystemClock
-
+from dddpy.domain.todo.exceptions import (
+    SelfDependencyError,
+    TodoAlreadyCompletedError,
+    TodoAlreadyStartedError,
+    TodoNotStartedError,
+)
 from dddpy.domain.todo.value_objects import (
     TodoDependencies,
     TodoDescription,
     TodoId,
     TodoStatus,
     TodoTitle,
-)
-from dddpy.domain.todo.exceptions import (
-    TodoAlreadyCompletedError,
-    TodoAlreadyStartedError,
-    TodoNotFoundError,
-    TodoNotStartedError,
-    SelfDependencyError,
 )
 
 if TYPE_CHECKING:
@@ -32,13 +30,13 @@ class Todo:
         id: TodoId,
         title: TodoTitle,
         project_id: 'ProjectId',
-        description: Optional[TodoDescription] = None,
+        description: TodoDescription | None = None,
         status: TodoStatus = TodoStatus.NOT_STARTED,
-        dependencies: Optional[TodoDependencies] = None,
-        clock: Optional[Clock] = None,
-        created_at: Optional[datetime] = None,
-        updated_at: Optional[datetime] = None,
-        completed_at: Optional[datetime] = None,
+        dependencies: TodoDependencies | None = None,
+        clock: Clock | None = None,
+        created_at: datetime | None = None,
+        updated_at: datetime | None = None,
+        completed_at: datetime | None = None,
     ):
         """
         Initialize a new Todo entity.
@@ -76,7 +74,7 @@ class Todo:
         return self._title
 
     @property
-    def description(self) -> Optional[TodoDescription]:
+    def description(self) -> TodoDescription | None:
         """Get the Todo's description"""
         return self._description
 
@@ -96,7 +94,7 @@ class Todo:
         return self._updated_at
 
     @property
-    def completed_at(self) -> Optional[datetime]:
+    def completed_at(self) -> datetime | None:
         """Get the Todo's completion timestamp"""
         return self._completed_at
 
@@ -110,7 +108,7 @@ class Todo:
         self._title = new_title
         self._updated_at = self._clock.now()
 
-    def update_description(self, new_description: Optional[TodoDescription]) -> None:
+    def update_description(self, new_description: TodoDescription | None) -> None:
         """Update the Todo's description"""
         self._description = new_description if new_description else None
         self._updated_at = self._clock.now()
@@ -160,7 +158,7 @@ class Todo:
         return self._status == TodoStatus.COMPLETED
 
     def is_overdue(
-        self, deadline: datetime, current_time: Optional[datetime] = None
+        self, deadline: datetime, current_time: datetime | None = None
     ) -> bool:
         """
         Check if the Todo is overdue based on the given deadline.
@@ -180,9 +178,9 @@ class Todo:
     def create(
         title: TodoTitle,
         project_id: 'ProjectId',
-        description: Optional[TodoDescription] = None,
-        dependencies: Optional[TodoDependencies] = None,
-        clock: Optional[Clock] = None,
+        description: TodoDescription | None = None,
+        dependencies: TodoDependencies | None = None,
+        clock: Clock | None = None,
     ) -> 'Todo':
         """Create a new Todo"""
         return Todo(

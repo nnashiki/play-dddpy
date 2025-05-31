@@ -5,27 +5,29 @@ from fastapi.responses import JSONResponse
 from starlette.status import (
     HTTP_400_BAD_REQUEST,
     HTTP_404_NOT_FOUND,
+    HTTP_500_INTERNAL_SERVER_ERROR,
 )
 
-from dddpy.presentation.api.error_schemas import ErrorResponse
-
-from dddpy.domain.project.exceptions.project_not_found_error import ProjectNotFoundError
-from dddpy.domain.project.exceptions.project_deletion_not_allowed_error import (
-    ProjectDeletionNotAllowedError,
-)
-from dddpy.domain.project.exceptions.todo_removal_not_allowed_error import (
-    TodoRemovalNotAllowedError,
-)
 from dddpy.domain.project.exceptions.duplicate_todo_title_error import (
     DuplicateTodoTitleError,
 )
+from dddpy.domain.project.exceptions.project_deletion_not_allowed_error import (
+    ProjectDeletionNotAllowedError,
+)
+from dddpy.domain.project.exceptions.project_not_found_error import ProjectNotFoundError
+from dddpy.domain.project.exceptions.todo_removal_not_allowed_error import (
+    TodoRemovalNotAllowedError,
+)
 from dddpy.domain.project.exceptions.too_many_todos_error import TooManyTodosError
-from dddpy.domain.todo.exceptions.todo_not_found_error import TodoNotFoundError
+from dddpy.domain.todo.exceptions.self_dependency_error import SelfDependencyError
+from dddpy.domain.todo.exceptions.todo_already_completed_error import (
+    TodoAlreadyCompletedError,
+)
 from dddpy.domain.todo.exceptions.todo_already_started_error import (
     TodoAlreadyStartedError,
 )
-from dddpy.domain.todo.exceptions.todo_already_completed_error import (
-    TodoAlreadyCompletedError,
+from dddpy.domain.todo.exceptions.todo_circular_dependency_error import (
+    TodoCircularDependencyError,
 )
 from dddpy.domain.todo.exceptions.todo_dependency_not_completed_error import (
     TodoDependencyNotCompletedError,
@@ -33,15 +35,11 @@ from dddpy.domain.todo.exceptions.todo_dependency_not_completed_error import (
 from dddpy.domain.todo.exceptions.todo_dependency_not_found_error import (
     TodoDependencyNotFoundError,
 )
-from dddpy.domain.todo.exceptions.todo_circular_dependency_error import (
-    TodoCircularDependencyError,
-)
+from dddpy.domain.todo.exceptions.todo_not_found_error import TodoNotFoundError
 from dddpy.domain.todo.exceptions.todo_not_started_error import TodoNotStartedError
-from dddpy.domain.todo.exceptions.self_dependency_error import SelfDependencyError
 from dddpy.domain.todo.exceptions.too_many_dependencies_error import (
     TooManyDependenciesError,
 )
-from starlette.status import HTTP_500_INTERNAL_SERVER_ERROR
 
 
 def _create_error_response(

@@ -12,15 +12,15 @@ class ProjectCreateDto:
     """DTO for creating a new Project."""
 
     name: str
-    description: Optional[str] = None
+    description: str | None = None
 
 
 @dataclass
 class ProjectUpdateDto:
     """DTO for updating an existing Project."""
 
-    name: Optional[str] = None
-    description: Optional[str] = None
+    name: str | None = None
+    description: str | None = None
 
 
 @dataclass
@@ -29,8 +29,8 @@ class ProjectOutputDto:
 
     id: str
     name: str
-    description: Optional[str]
-    todos: List[TodoOutputDto]
+    description: str | None
+    todos: list[TodoOutputDto]
     created_at: datetime
     updated_at: datetime
 
@@ -40,8 +40,8 @@ class AddTodoToProjectDto:
     """DTO for adding a Todo to a Project."""
 
     title: str
-    description: Optional[str] = None
-    dependencies: Optional[List[str]] = None
+    description: str | None = None
+    dependencies: list[str] | None = None
 
 
 __all__ = [

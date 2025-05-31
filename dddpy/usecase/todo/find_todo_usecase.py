@@ -3,11 +3,10 @@
 from abc import ABC, abstractmethod
 from uuid import UUID
 
-from dddpy.dto.todo import TodoOutputDto
 from dddpy.domain.project.repositories import ProjectRepository
 from dddpy.domain.todo.value_objects import TodoId
-from dddpy.domain.todo.exceptions import TodoNotFoundError
-from dddpy.presentation.assembler import ProjectTodoAssembler
+from dddpy.dto.todo import TodoOutputDto
+from dddpy.usecase.converter.todo_converter import TodoConverter
 
 
 class FindTodoThroughProjectUseCase(ABC):
@@ -39,7 +38,7 @@ class FindTodoThroughProjectUseCaseImpl(FindTodoThroughProjectUseCase):
             raise ProjectNotFoundError()
 
         todo = project.get_todo(_todo_id)
-        return ProjectTodoAssembler.to_output_dto(todo)
+        return TodoConverter.to_output_dto(todo)
 
 
 def new_find_todo_usecase(repo: ProjectRepository) -> FindTodoThroughProjectUseCase:

@@ -22,7 +22,6 @@ class Clock(ABC):
         Returns:
             datetime: 現在時刻
         """
-        pass
 
 
 class SystemClock(Clock):

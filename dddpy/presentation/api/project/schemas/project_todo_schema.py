@@ -1,6 +1,6 @@
 """Todo schemas for Project API endpoints."""
 
-from typing import List
+
 from pydantic import BaseModel, Field
 
 
@@ -11,7 +11,7 @@ class ProjectTodoSchema(BaseModel):
     title: str = Field(examples=['Complete the project'])
     description: str = Field(examples=['Finish implementing the DDD architecture'])
     status: str = Field(examples=['not_started'])
-    dependencies: List[str] = Field(examples=[['456e4567-e89b-12d3-a456-426614174001']])
+    dependencies: list[str] = Field(examples=[['456e4567-e89b-12d3-a456-426614174001']])
     project_id: str = Field(
         examples=['789e4567-e89b-12d3-a456-426614174002']
     )  # Added for clarity
@@ -34,7 +34,7 @@ class ProjectTodoUpdateSchema(BaseModel):
         max_length=1000,
         examples=['Finish implementing the DDD architecture'],
     )
-    dependencies: List[str] | None = Field(
+    dependencies: list[str] | None = Field(
         default=None,
         examples=[['456e4567-e89b-12d3-a456-426614174001']],
         description='List of Todo IDs that this Todo depends on',

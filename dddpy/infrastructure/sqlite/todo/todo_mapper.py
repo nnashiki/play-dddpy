@@ -1,19 +1,18 @@
 """Todo <-> TodoModel 変換責務を集約する Mapper."""
 
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
 from uuid import UUID
 
-from dddpy.domain.todo.entities import Todo
-from dddpy.domain.todo.value_objects import (
-    TodoId,
-    TodoTitle,
-    TodoDescription,
-    TodoStatus,
-    TodoDependencies,
-)
 from dddpy.domain.project.value_objects import ProjectId
 from dddpy.domain.shared.clock import SystemClock
+from dddpy.domain.todo.entities import Todo
+from dddpy.domain.todo.value_objects import (
+    TodoDependencies,
+    TodoDescription,
+    TodoId,
+    TodoStatus,
+    TodoTitle,
+)
 
 from .todo_model import TodoModel
 
@@ -40,13 +39,13 @@ class TodoMapper:
             dependencies=dependencies,
             clock=clock,
             created_at=datetime.fromtimestamp(
-                todo_row.created_at / 1000, tz=timezone.utc
+                todo_row.created_at / 1000, tz=UTC
             ),
             updated_at=datetime.fromtimestamp(
-                todo_row.updated_at / 1000, tz=timezone.utc
+                todo_row.updated_at / 1000, tz=UTC
             ),
             completed_at=datetime.fromtimestamp(
-                todo_row.completed_at / 1000, tz=timezone.utc
+                todo_row.completed_at / 1000, tz=UTC
             )
             if todo_row.completed_at
             else None,

@@ -1,19 +1,17 @@
 """This module provides use case for finding all Project entities."""
 
 from abc import ABC, abstractmethod
-from typing import List
 
-from dddpy.dto.project import ProjectOutputDto
-from dddpy.dto.todo import TodoOutputDto
 from dddpy.domain.project.repositories import ProjectRepository
-from dddpy.presentation.assembler import ProjectTodoAssembler
+from dddpy.dto.project import ProjectOutputDto
+from dddpy.usecase.converter.todo_converter import TodoConverter
 
 
 class FindProjectsUseCase(ABC):
     """FindProjectsUseCase defines a use case interface for finding all Projects."""
 
     @abstractmethod
-    def execute(self) -> List[ProjectOutputDto]:
+    def execute(self) -> list[ProjectOutputDto]:
         """execute finds all Projects."""
 
 
@@ -23,7 +21,7 @@ class FindProjectsUseCaseImpl(FindProjectsUseCase):
     def __init__(self, project_repository: ProjectRepository):
         self.project_repository = project_repository
 
-    def execute(self) -> List[ProjectOutputDto]:
+    def execute(self) -> list[ProjectOutputDto]:
         """execute finds all Projects."""
         projects = self.project_repository.find_all()
 
@@ -34,7 +32,7 @@ class FindProjectsUseCaseImpl(FindProjectsUseCase):
                 name=project.name.value,
                 description=project.description.value,
                 todos=[
-                    ProjectTodoAssembler.to_output_dto(todo) for todo in project.todos
+                    TodoConverter.to_output_dto(todo) for todo in project.todos
                 ],
                 created_at=project.created_at,
                 updated_at=project.updated_at,

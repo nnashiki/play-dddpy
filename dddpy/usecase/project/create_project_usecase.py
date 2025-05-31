@@ -2,12 +2,11 @@
 
 from abc import ABC, abstractmethod
 
-from dddpy.dto.project import ProjectCreateDto, ProjectOutputDto
-from dddpy.dto.todo import TodoOutputDto
 from dddpy.domain.project.entities import Project
-from dddpy.domain.project.value_objects import ProjectName, ProjectDescription
 from dddpy.domain.project.repositories import ProjectRepository
 from dddpy.domain.project.services import ProjectDomainService
+from dddpy.domain.project.value_objects import ProjectName
+from dddpy.dto.project import ProjectCreateDto, ProjectOutputDto
 
 
 class CreateProjectUseCase(ABC):

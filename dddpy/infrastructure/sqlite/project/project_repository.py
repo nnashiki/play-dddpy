@@ -1,6 +1,5 @@
 """SQLite implementation of Project repository."""
 
-from typing import Dict, List, Optional
 
 from sqlalchemy import desc
 from sqlalchemy.exc import NoResultFound
@@ -9,8 +8,8 @@ from sqlalchemy.orm.session import Session
 from dddpy.domain.project.entities import Project
 from dddpy.domain.project.repositories import ProjectRepository
 from dddpy.domain.project.value_objects import ProjectId
-from dddpy.infrastructure.sqlite.project.project_model import ProjectModel
 from dddpy.infrastructure.sqlite.project.project_mapper import ProjectMapper
+from dddpy.infrastructure.sqlite.project.project_model import ProjectModel
 from dddpy.infrastructure.sqlite.todo.todo_model import TodoModel
 
 
@@ -21,7 +20,7 @@ class ProjectRepositoryImpl(ProjectRepository):
         """Initialize repository with SQLAlchemy session."""
         self.session = session
 
-    def find_by_id(self, project_id: ProjectId) -> Optional[Project]:
+    def find_by_id(self, project_id: ProjectId) -> Project | None:
         """Find a Project by its ID."""
         try:
             project_row = (
@@ -36,7 +35,7 @@ class ProjectRepositoryImpl(ProjectRepository):
         )
         return ProjectMapper.to_entity(project_row, todo_rows)
 
-    def find_all(self, limit: Optional[int] = None) -> List[Project]:
+    def find_all(self, limit: int | None = None) -> list[Project]:
         """Retrieve all Project items with optional limit."""
         query = self.session.query(ProjectModel).order_by(desc(ProjectModel.created_at))
 

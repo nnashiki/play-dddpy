@@ -4,6 +4,7 @@ from dddpy.dto.project import ProjectOutputDto
 from dddpy.presentation.api.project.schemas.project_schema import ProjectSchema
 from dddpy.presentation.assembler.project_todo_assembler import ProjectTodoAssembler
 
+
 class ProjectAssembler:
     """ProjectOutputDto ⇨ ProjectSchema 変換責務"""
 

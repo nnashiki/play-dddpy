@@ -1,33 +1,32 @@
 """Project Todo API route handler integrating Todo operations within Project context."""
 
-from typing import List
 from uuid import UUID
 
 from fastapi import Depends, FastAPI, status
 
 from dddpy.dto.todo import TodoUpdateDto
 from dddpy.infrastructure.di.injection import (
-    get_start_todo_usecase,
     get_complete_todo_usecase,
-    get_update_todo_usecase,
-    get_find_todo_usecase,
     get_find_projects_usecase,
+    get_find_todo_usecase,
+    get_start_todo_usecase,
+    get_update_todo_usecase,
 )
+from dddpy.presentation.api.error_schemas import ErrorMessageProjectNotFound
 from dddpy.presentation.api.project.schemas.project_todo_error_schemas import (
     ErrorMessageTodoNotFound,
     TodoDependencyNotCompletedErrorMessage,
 )
-from dddpy.presentation.api.error_schemas import ErrorMessageProjectNotFound
 from dddpy.presentation.api.project.schemas.project_todo_schema import (
     ProjectTodoSchema,
     ProjectTodoUpdateSchema,
 )
 from dddpy.presentation.assembler.project_todo_assembler import ProjectTodoAssembler
 from dddpy.usecase.project import (
-    StartTodoThroughProjectUseCase,
     CompleteTodoThroughProjectUseCase,
-    UpdateTodoThroughProjectUseCase,
     FindProjectsUseCase,
+    StartTodoThroughProjectUseCase,
+    UpdateTodoThroughProjectUseCase,
 )
 from dddpy.usecase.todo.find_todo_usecase import FindTodoThroughProjectUseCase
 
@@ -43,7 +42,7 @@ class ProjectTodoApiRouteHandler:
         # ------------------------------------------------------------------ #
         @app.get(
             '/projects/{project_id}/todos',
-            response_model=List[ProjectTodoSchema],
+            response_model=list[ProjectTodoSchema],
             status_code=200,
             responses={
                 status.HTTP_404_NOT_FOUND: {'model': ErrorMessageProjectNotFound}
@@ -54,8 +53,8 @@ class ProjectTodoApiRouteHandler:
             usecase: FindProjectsUseCase = Depends(get_find_projects_usecase),
         ):
             # Find the specific project
-            from dddpy.domain.project.value_objects import ProjectId
             from dddpy.domain.project.exceptions import ProjectNotFoundError
+            from dddpy.domain.project.value_objects import ProjectId
 
             _project_id = ProjectId(project_id)
             project_outputs = usecase.execute()

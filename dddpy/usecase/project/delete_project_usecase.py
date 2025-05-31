@@ -3,13 +3,13 @@
 from abc import ABC, abstractmethod
 from uuid import UUID
 
-from dddpy.domain.project.repositories import ProjectRepository
-from dddpy.domain.project.value_objects import ProjectId
 from dddpy.domain.project.exceptions import (
-    ProjectNotFoundError,
     ProjectDeletionNotAllowedError,
+    ProjectNotFoundError,
 )
+from dddpy.domain.project.repositories import ProjectRepository
 from dddpy.domain.project.services import ProjectDomainService
+from dddpy.domain.project.value_objects import ProjectId
 
 
 class DeleteProjectUseCase(ABC):

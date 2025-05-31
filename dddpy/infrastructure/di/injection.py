@@ -1,28 +1,28 @@
 """Dependency-injection configuration for the application."""
 
-from typing import Iterator
+from collections.abc import Iterator
+
 from fastapi import Depends
 from sqlalchemy.orm import Session
 
+from dddpy.domain.project.repositories import ProjectRepository
 from dddpy.infrastructure.sqlite.database import SessionLocal
 from dddpy.infrastructure.sqlite.project.project_repository import (
     new_project_repository,
 )
-from dddpy.domain.project.repositories import ProjectRepository
-
 from dddpy.usecase.project import (
+    AddTodoToProjectUseCase,
+    CompleteTodoThroughProjectUseCase,
     # Project-level use-cases
     CreateProjectUseCase,
-    AddTodoToProjectUseCase,
     FindProjectsUseCase,
     StartTodoThroughProjectUseCase,
-    CompleteTodoThroughProjectUseCase,
     UpdateTodoThroughProjectUseCase,
-    new_create_project_usecase,
     new_add_todo_to_project_usecase,
+    new_complete_todo_through_project_usecase,
+    new_create_project_usecase,
     new_find_projects_usecase,
     new_start_todo_through_project_usecase,
-    new_complete_todo_through_project_usecase,
     new_update_todo_through_project_usecase,
 )
 from dddpy.usecase.project.delete_project_usecase import (

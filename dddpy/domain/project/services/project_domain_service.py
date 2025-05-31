@@ -5,8 +5,8 @@ from typing import TYPE_CHECKING
 from dddpy.domain.project.value_objects import ProjectName
 
 if TYPE_CHECKING:
-    from dddpy.domain.project.repositories import ProjectRepository
     from dddpy.domain.project.entities import Project
+    from dddpy.domain.project.repositories import ProjectRepository
 
 __all__ = ['ProjectDomainService']
 

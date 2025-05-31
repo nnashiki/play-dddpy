@@ -1,27 +1,25 @@
 """Controller for handling Project-related HTTP requests."""
 
-from typing import List
 from uuid import UUID
 
 from fastapi import Depends, FastAPI, status
 
-from dddpy.dto.project import ProjectCreateDto, AddTodoToProjectDto
-
+from dddpy.dto.project import AddTodoToProjectDto, ProjectCreateDto
 from dddpy.infrastructure.di.injection import (
-    get_create_project_usecase,
     get_add_todo_to_project_usecase,
-    get_find_projects_usecase,
+    get_create_project_usecase,
     get_delete_project_usecase,
+    get_find_projects_usecase,
 )
 from dddpy.presentation.api.project.schemas import (
+    AddTodoToProjectSchema,
     ProjectCreateSchema,
     ProjectSchema,
-    AddTodoToProjectSchema,
 )
 from dddpy.presentation.assembler.project_assembler import ProjectAssembler
 from dddpy.usecase.project import (
-    CreateProjectUseCase,
     AddTodoToProjectUseCase,
+    CreateProjectUseCase,
     FindProjectsUseCase,
 )
 from dddpy.usecase.project.delete_project_usecase import DeleteProjectUseCase
@@ -35,7 +33,7 @@ class ProjectApiRouteHandler:
 
         @app.get(
             '/projects',
-            response_model=List[ProjectSchema],
+            response_model=list[ProjectSchema],
             status_code=200,
         )
         def get_projects(

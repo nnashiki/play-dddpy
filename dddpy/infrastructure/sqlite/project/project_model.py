@@ -5,7 +5,6 @@ from uuid import UUID
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from dddpy.domain.project.entities import Project
 from dddpy.infrastructure.sqlite.database import Base
 
 

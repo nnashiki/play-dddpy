@@ -3,11 +3,11 @@
 from abc import ABC, abstractmethod
 from uuid import UUID
 
-from dddpy.dto.todo import TodoOutputDto
-from dddpy.domain.project.repositories import ProjectRepository
 from dddpy.domain.project.exceptions import ProjectNotFoundError
+from dddpy.domain.project.repositories import ProjectRepository
 from dddpy.domain.todo.value_objects import TodoId
-from dddpy.presentation.assembler import ProjectTodoAssembler
+from dddpy.dto.todo import TodoOutputDto
+from dddpy.usecase.converter.todo_converter import TodoConverter
 
 
 class StartTodoThroughProjectUseCase(ABC):
@@ -43,8 +43,8 @@ class StartTodoThroughProjectUseCaseImpl(StartTodoThroughProjectUseCase):
         # Save project with updated todo
         self.project_repository.save(project)
 
-        # Convert to output DTO using Assembler
-        return ProjectTodoAssembler.to_output_dto(updated_todo)
+        # Convert to output DTO using Converter (Application 層)
+        return TodoConverter.to_output_dto(updated_todo)
 
 
 def new_start_todo_through_project_usecase(

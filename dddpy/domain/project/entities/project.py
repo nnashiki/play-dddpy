@@ -1,35 +1,33 @@
 """Project entity that acts as an aggregate root containing multiple Todos."""
 
+from collections.abc import Mapping
 from datetime import datetime
-from typing import Dict, List, Mapping, Optional
 
-from dddpy.domain.shared.clock import Clock, SystemClock
-
-from dddpy.domain.project.value_objects import (
-    ProjectId,
-    ProjectName,
-    ProjectDescription,
-)
 from dddpy.domain.project.exceptions import (
-    TodoRemovalNotAllowedError,
     DuplicateTodoTitleError,
+    TodoRemovalNotAllowedError,
     TooManyTodosError,
 )
-from dddpy.domain.todo.entities import Todo
-from dddpy.domain.todo.value_objects import (
-    TodoDependencies,
-    TodoDescription as TodoDescriptionVO,
-    TodoId,
-    TodoStatus,
-    TodoTitle,
+from dddpy.domain.project.value_objects import (
+    ProjectDescription,
+    ProjectId,
+    ProjectName,
 )
+from dddpy.domain.shared.clock import Clock, SystemClock
+from dddpy.domain.todo.entities import Todo
 from dddpy.domain.todo.exceptions import (
-    TodoAlreadyCompletedError,
-    TodoAlreadyStartedError,
     TodoCircularDependencyError,
     TodoDependencyNotCompletedError,
     TodoDependencyNotFoundError,
     TodoNotFoundError,
+)
+from dddpy.domain.todo.value_objects import (
+    TodoDependencies,
+    TodoId,
+    TodoTitle,
+)
+from dddpy.domain.todo.value_objects import (
+    TodoDescription as TodoDescriptionVO,
 )
 
 
@@ -43,11 +41,11 @@ class Project:
         self,
         id: ProjectId,
         name: ProjectName,
-        description: Optional[ProjectDescription] = None,
-        todos: Optional[Dict[TodoId, Todo]] = None,
-        clock: Optional[Clock] = None,
-        created_at: Optional[datetime] = None,
-        updated_at: Optional[datetime] = None,
+        description: ProjectDescription | None = None,
+        todos: dict[TodoId, Todo] | None = None,
+        clock: Clock | None = None,
+        created_at: datetime | None = None,
+        updated_at: datetime | None = None,
     ):
         """Initialize a new Project aggregate."""
         self._id = id
@@ -89,7 +87,7 @@ class Project:
         return self._updated_at
 
     @property
-    def todos(self) -> List[Todo]:
+    def todos(self) -> list[Todo]:
         """Get all todos in the project"""
         return list(self._todos.values())
 
@@ -111,8 +109,8 @@ class Project:
     def add_todo(
         self,
         title: TodoTitle,
-        description: Optional[TodoDescriptionVO] = None,
-        dependencies: Optional[List[TodoId]] = None,
+        description: TodoDescriptionVO | None = None,
+        dependencies: list[TodoId] | None = None,
     ) -> Todo:
         """Add a new Todo to the project with dependency validation"""
         # Validate todo count limit
@@ -165,9 +163,9 @@ class Project:
     def update_todo_by_id(
         self,
         todo_id: TodoId,
-        title: Optional[TodoTitle] = None,
-        description: Optional[TodoDescriptionVO] = None,
-        dependencies: Optional[List[TodoId]] = None,
+        title: TodoTitle | None = None,
+        description: TodoDescriptionVO | None = None,
+        dependencies: list[TodoId] | None = None,
     ) -> Todo:
         """Update a Todo by ID"""
         if todo_id not in self._todos:
@@ -224,14 +222,14 @@ class Project:
         self._updated_at = self._clock.now()
         return todo
 
-    def _validate_dependencies_exist(self, dependency_ids: List[TodoId]) -> None:
+    def _validate_dependencies_exist(self, dependency_ids: list[TodoId]) -> None:
         """Validate that all dependency todos exist within this project"""
         for dep_id in dependency_ids:
             if dep_id not in self._todos:
                 raise TodoDependencyNotFoundError(str(dep_id.value))
 
     def _validate_no_circular_dependency(
-        self, todo_id: TodoId, new_dependencies: List[TodoId]
+        self, todo_id: TodoId, new_dependencies: list[TodoId]
     ) -> None:
         """Validate that setting new dependencies would not create circular dependencies"""
         visited = set()
@@ -296,7 +294,7 @@ class Project:
                 raise DuplicateTodoTitleError(title.value)
 
     @staticmethod
-    def create(name: str, description: Optional[str] = None) -> 'Project':
+    def create(name: str, description: str | None = None) -> 'Project':
         """Create a new Project"""
         project_name = ProjectName(name)
         project_description = ProjectDescription(description)

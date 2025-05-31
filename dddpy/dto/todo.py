@@ -2,7 +2,6 @@
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import List, Optional
 
 
 @dataclass
@@ -10,17 +9,17 @@ class TodoCreateDto:
     """DTO for creating a new Todo."""
 
     title: str
-    description: Optional[str] = None
-    dependencies: Optional[List[str]] = None
+    description: str | None = None
+    dependencies: list[str] | None = None
 
 
 @dataclass
 class TodoUpdateDto:
     """DTO for updating an existing Todo."""
 
-    title: Optional[str] = None
-    description: Optional[str] = None
-    dependencies: Optional[List[str]] = None
+    title: str | None = None
+    description: str | None = None
+    dependencies: list[str] | None = None
 
 
 @dataclass
@@ -29,19 +28,19 @@ class TodoOutputDto:
 
     id: str
     title: str
-    description: Optional[str]
+    description: str | None
     status: str
-    dependencies: List[str]
+    dependencies: list[str]
     created_at: datetime
     updated_at: datetime
-    completed_at: Optional[datetime]
+    completed_at: datetime | None
 
 
 @dataclass
 class SetDependenciesDto:
     """DTO for setting dependencies."""
 
-    dependencies: List[str]
+    dependencies: list[str]
 
 
 __all__ = [
