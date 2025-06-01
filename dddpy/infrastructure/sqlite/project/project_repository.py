@@ -116,6 +116,10 @@ class ProjectRepositoryImpl(ProjectRepository):
 
         # Delete the project
         self.session.query(ProjectModel).filter_by(id=project_id.value).delete()
+    
+    def get_session(self) -> Session:
+        """Get the current database session for transaction management"""
+        return self.session
 
 
 def new_project_repository(session: Session) -> ProjectRepository:

@@ -17,9 +17,11 @@ from dddpy.domain.todo.value_objects import (
     TodoStatus,
     TodoTitle,
 )
+from dddpy.domain.todo.events import TodoCreatedEvent
 
 if TYPE_CHECKING:
     from dddpy.domain.project.value_objects import ProjectId
+    from dddpy.domain.shared.events import DomainEventPublisher, DomainEvent
 
 
 class Todo:
@@ -37,6 +39,7 @@ class Todo:
         created_at: datetime | None = None,
         updated_at: datetime | None = None,
         completed_at: datetime | None = None,
+        event_publisher: 'DomainEventPublisher | None' = None,
     ):
         """
         Initialize a new Todo entity.
@@ -51,6 +54,8 @@ class Todo:
         self._created_at = created_at or self._clock.now()
         self._updated_at = updated_at or self._clock.now()
         self._completed_at = completed_at
+        self._event_publisher = event_publisher
+        self._events: list['DomainEvent'] = []
 
     def __eq__(self, obj: object) -> bool:
         if isinstance(obj, Todo):
@@ -102,6 +107,24 @@ class Todo:
     def dependencies(self) -> TodoDependencies:
         """Get the Todo's dependencies"""
         return self._dependencies
+
+    def get_events(self) -> list['DomainEvent']:
+        """Get all events that have been published."""
+        return self._events.copy()
+    
+    def has_events(self) -> bool:
+        """Check if there are any events."""
+        return len(self._events) > 0
+    
+    def clear_events(self) -> None:
+        """Clear all events."""
+        self._events.clear()
+    
+    def _publish_event(self, event: 'DomainEvent') -> None:
+        """Publish a domain event."""
+        if self._event_publisher:
+            self._event_publisher.publish(event)
+        self._events.append(event)
 
     def update_title(self, new_title: TodoTitle) -> None:
         """Update the Todo's title"""
@@ -181,13 +204,28 @@ class Todo:
         description: TodoDescription | None = None,
         dependencies: TodoDependencies | None = None,
         clock: Clock | None = None,
+        event_publisher: 'DomainEventPublisher | None' = None,
     ) -> 'Todo':
         """Create a new Todo"""
-        return Todo(
-            TodoId.generate(),
+        todo_id = TodoId.generate()
+        todo = Todo(
+            todo_id,
             title,
             project_id,
             description,
             dependencies=dependencies,
             clock=clock,
+            event_publisher=event_publisher,
         )
+        
+        # Publish TodoCreated event
+        event = TodoCreatedEvent(
+            todo_id=todo.id.value,
+            project_id=project_id.value,
+            title=title.value,
+            description=description.value if description else None,
+            occurred_at=todo.created_at,
+        )
+        todo._publish_event(event)
+        
+        return todo

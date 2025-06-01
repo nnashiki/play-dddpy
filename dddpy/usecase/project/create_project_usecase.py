@@ -6,8 +6,11 @@ from dddpy.domain.project.entities import Project
 from dddpy.domain.project.repositories import ProjectRepository
 from dddpy.domain.project.services import ProjectDomainService
 from dddpy.domain.project.value_objects import ProjectName
+from dddpy.domain.shared.events import DomainEventPublisher
 from dddpy.dto.project import ProjectCreateDto, ProjectOutputDto
 from dddpy.usecase.assembler.project_create_assembler import ProjectCreateAssembler
+from dddpy.infrastructure.handlers.project_history_handler import on_project_created
+from dddpy.infrastructure.handlers.todo_history_handler import on_todo_created
 
 
 class CreateProjectUseCase(ABC):
@@ -21,8 +24,9 @@ class CreateProjectUseCase(ABC):
 class CreateProjectUseCaseImpl(CreateProjectUseCase):
     """CreateProjectUseCaseImpl implements the use case for creating a new Project."""
 
-    def __init__(self, project_repository: ProjectRepository):
+    def __init__(self, project_repository: ProjectRepository, event_publisher: DomainEventPublisher):
         self.project_repository = project_repository
+        self.event_publisher = event_publisher
 
     def execute(self, dto: ProjectCreateDto) -> ProjectOutputDto:
         """execute creates a new Project."""
@@ -33,11 +37,22 @@ class CreateProjectUseCaseImpl(CreateProjectUseCase):
         ):
             raise ValueError(f"Project name '{dto.name}' already exists")
 
-        # Create project using new Assembler → Factory flow
-        project = ProjectCreateAssembler.to_entity(dto)
+        # Create project using Assembler with event publisher
+        project = ProjectCreateAssembler.to_entity(dto, self.event_publisher)
 
         # Save project
         self.project_repository.save(project)
+
+        # Handle events (履歴保存など) - 同一トランザクション内で直接実行
+        if project.has_events():
+            session = self.project_repository.get_session()
+            
+            # シンプルに直接ハンドラーを呼び出し（同一トランザクション）
+            for event in project.get_events():
+                if event.event_type == "ProjectCreated":
+                    on_project_created(event, session)
+                elif event.event_type == "TodoCreated":
+                    on_todo_created(event, session)
 
         # Convert to output DTO
         return ProjectOutputDto(
@@ -52,6 +67,7 @@ class CreateProjectUseCaseImpl(CreateProjectUseCase):
 
 def new_create_project_usecase(
     project_repository: ProjectRepository,
+    event_publisher: DomainEventPublisher,
 ) -> CreateProjectUseCase:
     """Create a new instance of CreateProjectUseCase."""
-    return CreateProjectUseCaseImpl(project_repository)
+    return CreateProjectUseCaseImpl(project_repository, event_publisher)

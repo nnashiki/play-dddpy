@@ -2,6 +2,7 @@
 
 from collections.abc import Mapping
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from dddpy.domain.project.exceptions import (
     DuplicateTodoTitleError,
@@ -29,8 +30,11 @@ from dddpy.domain.todo.value_objects import (
 from dddpy.domain.todo.value_objects import (
     TodoDescription as TodoDescriptionVO,
 )
-from dddpy.domain.shared.events import get_event_publisher
 from dddpy.domain.todo.events import TodoAddedToProjectEvent
+from dddpy.domain.project.events.project_created_event import ProjectCreatedEvent
+
+if TYPE_CHECKING:
+    from dddpy.domain.shared.events import DomainEventPublisher, DomainEvent
 
 
 class Project:
@@ -48,6 +52,7 @@ class Project:
         clock: Clock | None = None,
         created_at: datetime | None = None,
         updated_at: datetime | None = None,
+        event_publisher: 'DomainEventPublisher | None' = None,
     ):
         """Initialize a new Project aggregate."""
         self._id = id
@@ -57,6 +62,8 @@ class Project:
         self._clock = clock or SystemClock()
         self._created_at = created_at or self._clock.now()
         self._updated_at = updated_at or self._clock.now()
+        self._event_publisher = event_publisher
+        self._events: list['DomainEvent'] = []
 
     def __eq__(self, obj: object) -> bool:
         if isinstance(obj, Project):
@@ -98,6 +105,24 @@ class Project:
         """Get todos as read-only mapping for internal operations"""
         return self._todos.copy()
 
+    def get_events(self) -> list['DomainEvent']:
+        """Get all events that have been published."""
+        return self._events.copy()
+    
+    def has_events(self) -> bool:
+        """Check if there are any events."""
+        return len(self._events) > 0
+    
+    def clear_events(self) -> None:
+        """Clear all events."""
+        self._events.clear()
+    
+    def _publish_event(self, event: 'DomainEvent') -> None:
+        """Publish a domain event."""
+        if self._event_publisher:
+            self._event_publisher.publish(event)
+        self._events.append(event)
+
     def update_name(self, new_name: ProjectName) -> None:
         """Update the Project's name"""
         self._name = new_name
@@ -129,7 +154,14 @@ class Project:
             deps = None
 
         # Create todo with project_id
-        todo = Todo.create(title, self._id, description, deps, self._clock)
+        todo = Todo.create(
+            title, 
+            self._id, 
+            description, 
+            deps, 
+            self._clock,
+            event_publisher=self._event_publisher
+        )
 
         # Validate no circular dependencies
         if dependencies:
@@ -164,7 +196,13 @@ class Project:
         self._updated_at = self._clock.now()
         
         # Publish domain event
-        self._publish_todo_added_event(todo)
+        event = TodoAddedToProjectEvent(
+            project_id=self._id.value,
+            todo_id=todo.id.value,
+            todo_title=todo.title.value,
+            occurred_at=self._updated_at,
+        )
+        self._publish_event(event)
 
     def remove_todo(self, todo_id: TodoId) -> None:
         """Remove a Todo from the project"""
@@ -324,19 +362,39 @@ class Project:
 
     def _publish_todo_added_event(self, todo: Todo) -> None:
         """Publish TodoAddedToProjectEvent when a todo is added to the project."""
-        event_publisher = get_event_publisher()
         event = TodoAddedToProjectEvent(
             project_id=self._id.value,
             todo_id=todo.id.value,
             todo_title=todo.title.value,
             occurred_at=self._updated_at,
         )
-        event_publisher.publish(event)
+        self._publish_event(event)
 
     @staticmethod
-    def create(name: str, description: str | None = None) -> 'Project':
+    def create(
+        name: str, 
+        description: str | None = None, 
+        event_publisher: 'DomainEventPublisher | None' = None
+    ) -> 'Project':
         """Create a new Project"""
         project_name = ProjectName(name)
         project_description = ProjectDescription(description)
-
-        return Project(ProjectId.generate(), project_name, project_description)
+        project_id = ProjectId.generate()
+        
+        project = Project(
+            project_id, 
+            project_name, 
+            project_description,
+            event_publisher=event_publisher
+        )
+        
+        # Publish ProjectCreated event
+        event = ProjectCreatedEvent(
+            project_id=project.id.value,
+            name=name,
+            description=description,
+            occurred_at=project.created_at,
+        )
+        project._publish_event(event)
+        
+        return project

@@ -5,7 +5,6 @@ from .abstract_todo_factory import (
     HighPriorityTodoFactory,
     TodoFactoryProvider,
 )
-from .event_aware_todo_factory import EventAwareTodoFactory
 from .todo_factory_selector import TodoFactorySelector, TodoCreationStrategy
 
 __all__ = [
@@ -14,7 +13,6 @@ __all__ = [
     'StandardTodoFactory', 
     'HighPriorityTodoFactory',
     'TodoFactoryProvider',
-    'EventAwareTodoFactory',
     'TodoFactorySelector',
     'TodoCreationStrategy',
 ]

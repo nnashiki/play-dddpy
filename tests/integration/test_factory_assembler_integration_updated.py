@@ -6,11 +6,11 @@ from uuid import uuid4
 from dddpy.domain.project.entities import Project
 from dddpy.domain.project.value_objects import ProjectId, ProjectName, ProjectDescription
 from dddpy.domain.shared.events import get_event_publisher
-from dddpy.domain.todo.factories import EventAwareTodoFactory
+from dddpy.domain.todo.entities import Todo
 from dddpy.domain.todo.value_objects import TodoTitle, TodoDescription
 from dddpy.dto.todo import TodoCreateDto
 from dddpy.dto.project import AddTodoToProjectDto
-from dddpy.usecase.assembler import TodoCreateAssembler, EventAwareTodoCreateAssembler
+from dddpy.usecase.assembler import TodoCreateAssembler
 
 
 class TestFactoryAssemblerIntegrationUpdated(unittest.TestCase):
@@ -18,15 +18,16 @@ class TestFactoryAssemblerIntegrationUpdated(unittest.TestCase):
 
     def setUp(self):
         """テストの前準備"""
-        # Clear any existing events
-        get_event_publisher().clear_events()
-        
-        # Create a test project
+        # Create a test project directly (without using Project.create() to avoid ProjectCreated event)
         self.project = Project(
             id=ProjectId(uuid4()),
             name=ProjectName("Test Project"),
-            description=ProjectDescription("Test Description")
+            description=ProjectDescription("Test Description"),
+            event_publisher=get_event_publisher()
         )
+        
+        # Clear any existing events after project creation
+        get_event_publisher().clear_events()
 
     def test_assembler_with_todo_create_dto(self):
         """TodoCreateDto使用の統合フロー"""
@@ -66,7 +67,7 @@ class TestFactoryAssemblerIntegrationUpdated(unittest.TestCase):
         self.assertEqual(added_todo.title.value, "AddTodoToProject Test")
 
     def test_event_aware_assembler_with_add_todo_dto(self):
-        """EventAwareAssembler + AddTodoToProjectDto統合テスト"""
+        """Todo.create + AddTodoToProjectDto統合テスト"""
         get_event_publisher().clear_events()
         
         # AddTodoToProjectDtoを直接使用
@@ -75,8 +76,13 @@ class TestFactoryAssemblerIntegrationUpdated(unittest.TestCase):
             description="Test Description"
         )
         
-        # ✅ 修正版：DTOを直接渡す
-        todo = EventAwareTodoCreateAssembler.to_entity(dto, str(self.project.id.value))
+        # Todoを直接作成
+        todo = Todo.create(
+            title=TodoTitle(dto.title),
+            project_id=self.project.id,
+            description=TodoDescription(dto.description) if dto.description else None,
+            event_publisher=get_event_publisher(),
+        )
         
         # ProjectにTodo追加
         self.project.add_todo_entity(todo)

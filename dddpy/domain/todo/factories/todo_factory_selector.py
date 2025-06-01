@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING
 from dddpy.domain.shared.clock import Clock
 from dddpy.domain.todo.entities import Todo
 from dddpy.domain.todo.factories.todo_factory import TodoFactory  # 直接インポート
-from dddpy.domain.todo.factories.event_aware_todo_factory import EventAwareTodoFactory
 from dddpy.domain.todo.factories.abstract_todo_factory import (
     StandardTodoFactory,
     HighPriorityTodoFactory,
@@ -19,6 +18,7 @@ from dddpy.domain.todo.value_objects import (
 
 if TYPE_CHECKING:
     from dddpy.domain.project.value_objects import ProjectId
+    from dddpy.domain.shared.events import DomainEventPublisher
 
 
 class TodoCreationStrategy(Enum):
@@ -26,7 +26,7 @@ class TodoCreationStrategy(Enum):
     
     STANDARD = "standard"
     HIGH_PRIORITY = "high_priority"
-    EVENT_AWARE = "event_aware"
+    ENTITY_DIRECT = "entity_direct"
     LEGACY = "legacy"
 
 
@@ -41,6 +41,7 @@ class TodoFactorySelector:
         description: TodoDescription | None = None,
         dependencies: TodoDependencies | None = None,
         clock: Clock | None = None,
+        event_publisher: 'DomainEventPublisher | None' = None,
     ) -> Todo:
         """Create Todo using specified strategy.
         
@@ -51,6 +52,7 @@ class TodoFactorySelector:
             description: Optional description
             dependencies: Optional dependencies
             clock: Optional clock
+            event_publisher: Optional event publisher
             
         Returns:
             Todo: Created Todo entity
@@ -66,8 +68,8 @@ class TodoFactorySelector:
             high_priority_factory = HighPriorityTodoFactory()
             return high_priority_factory.create_todo(title, project_id, description, dependencies, clock)
             
-        elif strategy == TodoCreationStrategy.EVENT_AWARE:
-            return EventAwareTodoFactory.create(title, project_id, description, dependencies, clock)
+        elif strategy == TodoCreationStrategy.ENTITY_DIRECT:
+            return Todo.create(title, project_id, description, dependencies, clock, event_publisher)
             
         elif strategy == TodoCreationStrategy.LEGACY:
             # Use legacy TodoFactory.create for backward compatibility
@@ -92,9 +94,9 @@ class TodoFactorySelector:
         Returns:
             TodoCreationStrategy: Recommended strategy
         """
-        # Event-aware strategy if events are needed
+        # Direct entity strategy if events are needed
         if needs_events:
-            return TodoCreationStrategy.EVENT_AWARE
+            return TodoCreationStrategy.ENTITY_DIRECT
             
         # High priority strategy for important todos
         if is_high_priority:

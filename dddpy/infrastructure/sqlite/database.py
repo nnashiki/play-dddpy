@@ -24,4 +24,10 @@ Base = declarative_base()
 
 def create_tables():
     """Create all database tables defined in SQLAlchemy models."""
+    # Import all models to ensure they are registered with SQLAlchemy
+    from dddpy.infrastructure.sqlite.project.project_model import ProjectModel
+    from dddpy.infrastructure.sqlite.project.project_history_model import ProjectHistoryModel
+    from dddpy.infrastructure.sqlite.todo.todo_model import TodoModel
+    from dddpy.infrastructure.sqlite.todo.todo_history_model import TodoHistoryModel
+    
     Base.metadata.create_all(bind=engine)

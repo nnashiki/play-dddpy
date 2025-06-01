@@ -6,6 +6,7 @@ from fastapi import Depends
 from sqlalchemy.orm import Session
 
 from dddpy.domain.project.repositories import ProjectRepository
+from dddpy.domain.shared.events import get_event_publisher, DomainEventPublisher
 from dddpy.infrastructure.sqlite.database import SessionLocal
 from dddpy.infrastructure.sqlite.project.project_repository import (
     new_project_repository,
@@ -48,6 +49,11 @@ def get_session() -> Iterator[Session]:
         session.close()
 
 
+def get_event_publisher_di() -> DomainEventPublisher:
+    """Get event publisher from DI container."""
+    return get_event_publisher()
+
+
 def get_project_repository(
     session: Session = Depends(get_session),
 ) -> ProjectRepository:
@@ -57,8 +63,9 @@ def get_project_repository(
 
 def get_create_project_usecase(
     project_repository: ProjectRepository = Depends(get_project_repository),
+    event_publisher: DomainEventPublisher = Depends(get_event_publisher_di),
 ) -> CreateProjectUseCase:
-    return new_create_project_usecase(project_repository)
+    return new_create_project_usecase(project_repository, event_publisher)
 
 
 def get_add_todo_to_project_usecase(

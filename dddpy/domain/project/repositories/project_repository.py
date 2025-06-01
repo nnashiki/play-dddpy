@@ -1,6 +1,7 @@
 """Repository interface for Project entities."""
 
 from abc import ABC, abstractmethod
+from sqlalchemy.orm import Session
 
 from dddpy.domain.project.entities import Project
 from dddpy.domain.project.value_objects import ProjectId
@@ -24,3 +25,7 @@ class ProjectRepository(ABC):
     @abstractmethod
     def delete(self, project_id: ProjectId) -> None:
         """Delete a Project by ID"""
+    
+    @abstractmethod
+    def get_session(self) -> Session:
+        """Get the current database session for transaction management"""
