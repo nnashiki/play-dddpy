@@ -1,8 +1,8 @@
 """Value object for Todo dependencies."""
 
 from dataclasses import dataclass
-from typing import Set, Optional
 
+from ..exceptions import SelfDependencyError, TooManyDependenciesError
 from .todo_id import TodoId
 
 
@@ -10,12 +10,12 @@ from .todo_id import TodoId
 class TodoDependencies:
     """Value object representing dependencies of a Todo"""
 
-    values: Set[TodoId]
+    values: set[TodoId]
 
     def __post_init__(self) -> None:
         """Validate the dependencies after initialization"""
         if len(self.values) > 100:  # Maximum 100 dependencies
-            raise ValueError('Too many dependencies. Maximum 100 dependencies allowed.')
+            raise TooManyDependenciesError()
 
     @staticmethod
     def empty() -> 'TodoDependencies':
@@ -24,7 +24,7 @@ class TodoDependencies:
 
     @staticmethod
     def from_list(
-        todo_ids: list[TodoId], self_id: Optional[TodoId] = None
+        todo_ids: list[TodoId], self_id: TodoId | None = None
     ) -> 'TodoDependencies':
         """Create dependencies from a list of TodoIds (duplicates will be removed)
 
@@ -38,7 +38,7 @@ class TodoDependencies:
         todo_id_set = set(todo_ids)
 
         if self_id and self_id in todo_id_set:
-            raise ValueError(f'Cannot add self ({self_id.value}) as dependency')
+            raise SelfDependencyError()
 
         return TodoDependencies(todo_id_set)
 

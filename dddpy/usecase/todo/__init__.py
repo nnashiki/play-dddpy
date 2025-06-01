@@ -1,53 +1,11 @@
-"""This package provides use cases for Todo entity operations."""
+"""This package provides use cases for Todo operations through Project context."""
 
-from dddpy.usecase.todo.create_todo_usecase import (
-    CreateTodoUseCase,
-    new_create_todo_usecase,
-)
-from dddpy.usecase.todo.start_todo_usecase import (
-    StartTodoUseCase,
-    new_start_todo_usecase,
-)
-from dddpy.usecase.todo.complete_todo_usecase import (
-    CompleteTodoUseCase,
-    new_complete_todo_usecase,
-)
-from dddpy.usecase.todo.update_todo_usecase import (
-    UpdateTodoUseCase,
-    new_update_todo_usecase,
-)
-from dddpy.usecase.todo.delete_todo_usecase import (
-    DeleteTodoUseCase,
-    new_delete_todo_usecase,
-)
-from dddpy.usecase.todo.find_todo_by_id_usecase import (
-    FindTodoByIdUseCase,
-    new_find_todo_by_id_usecase,
-)
-from dddpy.usecase.todo.find_todos_usecase import (
-    FindTodosUseCase,
-    new_find_todos_usecase,
-)
-from dddpy.usecase.todo.set_dependencies_usecase import (
-    SetDependenciesUseCase,
-    new_set_dependencies_usecase,
+from dddpy.usecase.todo.find_todo_usecase import (
+    FindTodoThroughProjectUseCase,
+    new_find_todo_usecase,
 )
 
 __all__ = [
-    'CreateTodoUseCase',
-    'StartTodoUseCase',
-    'CompleteTodoUseCase',
-    'UpdateTodoUseCase',
-    'DeleteTodoUseCase',
-    'FindTodoByIdUseCase',
-    'FindTodosUseCase',
-    'SetDependenciesUseCase',
-    'new_create_todo_usecase',
-    'new_start_todo_usecase',
-    'new_complete_todo_usecase',
-    'new_update_todo_usecase',
-    'new_delete_todo_usecase',
-    'new_find_todo_by_id_usecase',
-    'new_find_todos_usecase',
-    'new_set_dependencies_usecase',
+    'FindTodoThroughProjectUseCase',
+    'new_find_todo_usecase',
 ]

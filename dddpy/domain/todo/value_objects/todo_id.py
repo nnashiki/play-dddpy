@@ -17,3 +17,6 @@ class TodoId:
 
     def __str__(self) -> str:
         return str(self.value)
+
+    def __hash__(self) -> int:
+        return hash(self.value)
