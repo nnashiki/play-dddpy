@@ -67,8 +67,9 @@ class HighPriorityTodoFactory(AbstractTodoFactory):
         if not description:
             # High-priority todos require description
             from dddpy.domain.todo.value_objects import TodoDescription
-            description = TodoDescription("High priority task - description required")
-        
+
+            description = TodoDescription('High priority task - description required')
+
         # Create todo with additional metadata for high priority
         todo = Todo.create(
             title=title,
@@ -77,7 +78,7 @@ class HighPriorityTodoFactory(AbstractTodoFactory):
             dependencies=dependencies,
             clock=clock or SystemClock(),
         )
-        
+
         # Future: Add priority-specific domain events or metadata
         return todo
 
@@ -86,25 +87,25 @@ class TodoFactoryProvider:
     """Provider class to get appropriate Todo factory based on context."""
 
     @staticmethod
-    def get_factory(factory_type: str = "standard") -> AbstractTodoFactory:
+    def get_factory(factory_type: str = 'standard') -> AbstractTodoFactory:
         """Get appropriate Todo factory based on type.
-        
+
         Args:
             factory_type: Type of factory ("standard", "high_priority")
-            
+
         Returns:
             AbstractTodoFactory: Appropriate factory instance
-            
+
         Raises:
             ValueError: If factory_type is not supported
         """
         # ✅ 型を統一：すべてAbstractTodoFactoryとして扱う
         factories: dict[str, AbstractTodoFactory] = {
-            "standard": StandardTodoFactory(),
-            "high_priority": HighPriorityTodoFactory(),
+            'standard': StandardTodoFactory(),
+            'high_priority': HighPriorityTodoFactory(),
         }
-        
+
         if factory_type not in factories:
-            raise ValueError(f"Unsupported factory type: {factory_type}")
-            
+            raise ValueError(f'Unsupported factory type: {factory_type}')
+
         return factories[factory_type]

@@ -9,9 +9,9 @@ from dddpy.infrastructure.sqlite.database import Base
 
 class TodoHistoryModel(Base):
     """Todo history model for tracking todo lifecycle events."""
-    
-    __tablename__ = "todo_histories"
-    
+
+    __tablename__ = 'todo_histories'
+
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     todo_id = Column(UUID(as_uuid=True), nullable=False)
     project_id = Column(UUID(as_uuid=True), nullable=False)

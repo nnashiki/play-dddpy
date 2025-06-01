@@ -31,9 +31,7 @@ class FindProjectsUseCaseImpl(FindProjectsUseCase):
                 id=str(project.id.value),
                 name=project.name.value,
                 description=project.description.value,
-                todos=[
-                    TodoConverter.to_output_dto(todo) for todo in project.todos
-                ],
+                todos=[TodoConverter.to_output_dto(todo) for todo in project.todos],
                 created_at=project.created_at,
                 updated_at=project.updated_at,
             )

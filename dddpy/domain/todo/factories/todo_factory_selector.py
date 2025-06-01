@@ -23,11 +23,11 @@ if TYPE_CHECKING:
 
 class TodoCreationStrategy(Enum):
     """Todo creation strategy enumeration."""
-    
-    STANDARD = "standard"
-    HIGH_PRIORITY = "high_priority"
-    ENTITY_DIRECT = "entity_direct"
-    LEGACY = "legacy"
+
+    STANDARD = 'standard'
+    HIGH_PRIORITY = 'high_priority'
+    ENTITY_DIRECT = 'entity_direct'
+    LEGACY = 'legacy'
 
 
 class TodoFactorySelector:
@@ -44,7 +44,7 @@ class TodoFactorySelector:
         event_publisher: 'DomainEventPublisher | None' = None,
     ) -> Todo:
         """Create Todo using specified strategy.
-        
+
         Args:
             strategy: Creation strategy to use
             title: Todo title
@@ -53,30 +53,38 @@ class TodoFactorySelector:
             dependencies: Optional dependencies
             clock: Optional clock
             event_publisher: Optional event publisher
-            
+
         Returns:
             Todo: Created Todo entity
-            
+
         Raises:
             ValueError: If strategy is not supported
         """
         if strategy == TodoCreationStrategy.STANDARD:
             standard_factory = StandardTodoFactory()
-            return standard_factory.create_todo(title, project_id, description, dependencies, clock)
-            
+            return standard_factory.create_todo(
+                title, project_id, description, dependencies, clock
+            )
+
         elif strategy == TodoCreationStrategy.HIGH_PRIORITY:
             high_priority_factory = HighPriorityTodoFactory()
-            return high_priority_factory.create_todo(title, project_id, description, dependencies, clock)
-            
+            return high_priority_factory.create_todo(
+                title, project_id, description, dependencies, clock
+            )
+
         elif strategy == TodoCreationStrategy.ENTITY_DIRECT:
-            return Todo.create(title, project_id, description, dependencies, clock, event_publisher)
-            
+            return Todo.create(
+                title, project_id, description, dependencies, clock, event_publisher
+            )
+
         elif strategy == TodoCreationStrategy.LEGACY:
             # Use legacy TodoFactory.create for backward compatibility
-            return TodoFactory.create(title, project_id, description, dependencies, clock)
-            
+            return TodoFactory.create(
+                title, project_id, description, dependencies, clock
+            )
+
         else:
-            raise ValueError(f"Unsupported creation strategy: {strategy}")
+            raise ValueError(f'Unsupported creation strategy: {strategy}')
 
     @staticmethod
     def get_recommended_strategy(
@@ -85,22 +93,22 @@ class TodoFactorySelector:
         needs_events: bool = False,
     ) -> TodoCreationStrategy:
         """Get recommended strategy based on context.
-        
+
         Args:
             has_dependencies: Whether todo has dependencies
             is_high_priority: Whether todo is high priority
             needs_events: Whether domain events are needed
-            
+
         Returns:
             TodoCreationStrategy: Recommended strategy
         """
         # Direct entity strategy if events are needed
         if needs_events:
             return TodoCreationStrategy.ENTITY_DIRECT
-            
+
         # High priority strategy for important todos
         if is_high_priority:
             return TodoCreationStrategy.HIGH_PRIORITY
-            
+
         # Standard strategy for most cases
         return TodoCreationStrategy.STANDARD

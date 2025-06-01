@@ -26,15 +26,13 @@ class TestTodoFactory(unittest.TestCase):
 
     def test_create_todo_with_minimal_params(self):
         """最小限のパラメータでTodoを作成"""
-        title = TodoTitle("Test Todo")
-        
+        title = TodoTitle('Test Todo')
+
         todo = TodoFactory.create(
-            title=title,
-            project_id=self.project_id,
-            clock=self.clock
+            title=title, project_id=self.project_id, clock=self.clock
         )
-        
-        self.assertEqual(todo.title.value, "Test Todo")
+
+        self.assertEqual(todo.title.value, 'Test Todo')
         self.assertEqual(todo.project_id, self.project_id)
         self.assertIsNone(todo.description)
         self.assertTrue(todo.dependencies.is_empty())
@@ -42,31 +40,31 @@ class TestTodoFactory(unittest.TestCase):
 
     def test_create_todo_with_description(self):
         """説明付きでTodoを作成"""
-        title = TodoTitle("Test Todo")
-        description = TodoDescription("Test Description")
-        
+        title = TodoTitle('Test Todo')
+        description = TodoDescription('Test Description')
+
         todo = TodoFactory.create(
             title=title,
             project_id=self.project_id,
             description=description,
-            clock=self.clock
+            clock=self.clock,
         )
-        
-        self.assertEqual(todo.description.value, "Test Description")
+
+        self.assertEqual(todo.description.value, 'Test Description')
 
     def test_create_todo_with_dependencies(self):
         """依存関係付きでTodoを作成"""
-        title = TodoTitle("Test Todo")
+        title = TodoTitle('Test Todo')
         dep_id = TodoId(uuid4())
         dependencies = TodoDependencies.from_list([dep_id])
-        
+
         todo = TodoFactory.create(
             title=title,
             project_id=self.project_id,
             dependencies=dependencies,
-            clock=self.clock
+            clock=self.clock,
         )
-        
+
         self.assertTrue(todo.dependencies.contains(dep_id))
 
 

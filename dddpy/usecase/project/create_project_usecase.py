@@ -24,7 +24,11 @@ class CreateProjectUseCase(ABC):
 class CreateProjectUseCaseImpl(CreateProjectUseCase):
     """CreateProjectUseCaseImpl implements the use case for creating a new Project."""
 
-    def __init__(self, project_repository: ProjectRepository, event_publisher: DomainEventPublisher):
+    def __init__(
+        self,
+        project_repository: ProjectRepository,
+        event_publisher: DomainEventPublisher,
+    ):
         self.project_repository = project_repository
         self.event_publisher = event_publisher
 
@@ -46,12 +50,12 @@ class CreateProjectUseCaseImpl(CreateProjectUseCase):
         # Handle events (履歴保存など) - 同一トランザクション内で直接実行
         if project.has_events():
             session = self.project_repository.get_session()
-            
+
             # シンプルに直接ハンドラーを呼び出し（同一トランザクション）
             for event in project.get_events():
-                if event.event_type == "ProjectCreated":
+                if event.event_type == 'ProjectCreated':
                     on_project_created(event, session)
-                elif event.event_type == "TodoCreated":
+                elif event.event_type == 'TodoCreated':
                     on_todo_created(event, session)
 
         # Convert to output DTO

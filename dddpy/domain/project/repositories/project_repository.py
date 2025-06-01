@@ -25,7 +25,7 @@ class ProjectRepository(ABC):
     @abstractmethod
     def delete(self, project_id: ProjectId) -> None:
         """Delete a Project by ID"""
-    
+
     @abstractmethod
     def get_session(self) -> Session:
         """Get the current database session for transaction management"""

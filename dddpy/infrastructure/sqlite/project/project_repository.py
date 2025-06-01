@@ -1,6 +1,5 @@
 """SQLite implementation of Project repository."""
 
-
 from sqlalchemy import desc
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm.session import Session
@@ -105,7 +104,7 @@ class ProjectRepositoryImpl(ProjectRepository):
                 .filter_by(project_id=project.id.value)
                 .all()
             )
-        
+
         for todo_to_delete in todos_to_delete:
             self.session.delete(todo_to_delete)
 
@@ -116,7 +115,7 @@ class ProjectRepositoryImpl(ProjectRepository):
 
         # Delete the project
         self.session.query(ProjectModel).filter_by(id=project_id.value).delete()
-    
+
     def get_session(self) -> Session:
         """Get the current database session for transaction management"""
         return self.session

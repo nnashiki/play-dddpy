@@ -17,6 +17,7 @@ from dddpy.domain.todo.entities import Todo
 
 class TodoCreationData(Protocol):
     """Protocol for Todo creation data - allows various DTO types."""
+
     title: str
     description: str | None
     dependencies: list[str] | None
@@ -24,10 +25,10 @@ class TodoCreationData(Protocol):
 
 class TodoCreateAssembler:
     """Todo作成用DTOからTodoエンティティへの変換を担当するアセンブラ
-    
+
     アプリケーション層でDTOをドメインVOに変換し、
     ドメインFactoryを呼び出してエンティティを生成する責務を持つ。
-    
+
     Protocol対応により、TodoCreateDtoとAddTodoToProjectDto等、
     同じ構造を持つDTOを統一的に処理可能。
     """
@@ -35,14 +36,14 @@ class TodoCreateAssembler:
     @staticmethod
     def to_entity(dto: TodoCreationData, project_id_str: str) -> Todo:
         """Todo作成用DTOからTodoエンティティを生成
-        
+
         Args:
             dto: Todo作成用DTO（TodoCreateDto, AddTodoToProjectDto等対応）
             project_id_str: プロジェクトIDの文字列表現
-            
+
         Returns:
             Todo: 生成されたTodoエンティティ
-            
+
         Raises:
             ValueError: DTOの値が不正な場合
         """
@@ -61,13 +62,13 @@ class TodoCreateAssembler:
         project_id_str: str,
     ) -> Todo:
         """共通のTodo作成ロジック
-        
+
         Args:
             title: Todoタイトル
             description: Todo説明（任意）
             dependencies: 依存Todo ID文字列リスト（任意）
             project_id_str: プロジェクトIDの文字列表現
-            
+
         Returns:
             Todo: 生成されたTodoエンティティ
         """

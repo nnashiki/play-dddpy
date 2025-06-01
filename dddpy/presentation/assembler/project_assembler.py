@@ -13,7 +13,7 @@ class ProjectAssembler:
         return ProjectSchema(
             id=dto.id,
             name=dto.name,
-            description=dto.description or "",
+            description=dto.description or '',
             todos=[
                 ProjectTodoAssembler.to_schema(todo_dto, dto.id)
                 for todo_dto in dto.todos

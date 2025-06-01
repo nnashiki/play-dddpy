@@ -108,15 +108,15 @@ class Project:
     def get_events(self) -> list['DomainEvent']:
         """Get all events that have been published."""
         return self._events.copy()
-    
+
     def has_events(self) -> bool:
         """Check if there are any events."""
         return len(self._events) > 0
-    
+
     def clear_events(self) -> None:
         """Clear all events."""
         self._events.clear()
-    
+
     def _publish_event(self, event: 'DomainEvent') -> None:
         """Publish a domain event."""
         if self._event_publisher:
@@ -155,12 +155,12 @@ class Project:
 
         # Create todo with project_id
         todo = Todo.create(
-            title, 
-            self._id, 
-            description, 
-            deps, 
+            title,
+            self._id,
+            description,
+            deps,
             self._clock,
-            event_publisher=self._event_publisher
+            event_publisher=self._event_publisher,
         )
 
         # Validate no circular dependencies
@@ -172,12 +172,13 @@ class Project:
         return todo
 
     def add_todo_entity(self, todo: Todo) -> None:
-        """Add an existing Todo entity to the project with validation
-        """
+        """Add an existing Todo entity to the project with validation"""
         # Validate that the todo belongs to this project
         if todo.project_id != self._id:
-            raise ValueError(f"Todo project_id {todo.project_id} does not match this project {self._id}")
-            
+            raise ValueError(
+                f'Todo project_id {todo.project_id} does not match this project {self._id}'
+            )
+
         # Validate todo count limit
         self._validate_todo_limit()
 
@@ -187,14 +188,16 @@ class Project:
         # Validate dependencies exist within this project
         if not todo.dependencies.is_empty():
             self._validate_dependencies_exist(list(todo.dependencies.values))
-            
+
             # Validate no circular dependencies
-            self._validate_no_circular_dependency(todo.id, list(todo.dependencies.values))
+            self._validate_no_circular_dependency(
+                todo.id, list(todo.dependencies.values)
+            )
 
         # Add todo to project
         self._todos[todo.id] = todo
         self._updated_at = self._clock.now()
-        
+
         # Publish domain event
         event = TodoAddedToProjectEvent(
             project_id=self._id.value,
@@ -372,22 +375,22 @@ class Project:
 
     @staticmethod
     def create(
-        name: str, 
-        description: str | None = None, 
-        event_publisher: 'DomainEventPublisher | None' = None
+        name: str,
+        description: str | None = None,
+        event_publisher: 'DomainEventPublisher | None' = None,
     ) -> 'Project':
         """Create a new Project"""
         project_name = ProjectName(name)
         project_description = ProjectDescription(description)
         project_id = ProjectId.generate()
-        
+
         project = Project(
-            project_id, 
-            project_name, 
+            project_id,
+            project_name,
             project_description,
-            event_publisher=event_publisher
+            event_publisher=event_publisher,
         )
-        
+
         # Publish ProjectCreated event
         event = ProjectCreatedEvent(
             project_id=project.id.value,
@@ -396,5 +399,5 @@ class Project:
             occurred_at=project.created_at,
         )
         project._publish_event(event)
-        
+
         return project

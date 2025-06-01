@@ -26,14 +26,14 @@ class TodoFactory:
         clock: Clock | None = None,
     ) -> Todo:
         """ドメインVOからTodoエンティティを生成
-        
+
         Args:
             title: Todoのタイトル
             project_id: 所属するプロジェクトのID
             description: Todoの説明（任意）
             dependencies: Todoの依存関係（任意）
             clock: 時刻取得用クロック（任意、デフォルトはSystemClock）
-            
+
         Returns:
             Todo: 生成されたTodoエンティティ
         """

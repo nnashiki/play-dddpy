@@ -9,9 +9,9 @@ from dddpy.infrastructure.sqlite.database import Base
 
 class ProjectHistoryModel(Base):
     """Project history model for tracking project lifecycle events."""
-    
-    __tablename__ = "project_histories"
-    
+
+    __tablename__ = 'project_histories'
+
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     project_id = Column(UUID(as_uuid=True), nullable=False)
     name = Column(String(255), nullable=False)

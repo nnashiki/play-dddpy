@@ -18,12 +18,12 @@ class ProjectFactory:
         clock: Clock | None = None,
     ) -> Project:
         """ドメインVOからProjectエンティティを生成
-        
+
         Args:
             name: プロジェクトの名前
             description: プロジェクトの説明（任意）
             clock: 時刻取得用クロック（任意、デフォルトはSystemClock）
-            
+
         Returns:
             Project: 生成されたProjectエンティティ
         """

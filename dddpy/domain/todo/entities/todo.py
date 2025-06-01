@@ -111,15 +111,15 @@ class Todo:
     def get_events(self) -> list['DomainEvent']:
         """Get all events that have been published."""
         return self._events.copy()
-    
+
     def has_events(self) -> bool:
         """Check if there are any events."""
         return len(self._events) > 0
-    
+
     def clear_events(self) -> None:
         """Clear all events."""
         self._events.clear()
-    
+
     def _publish_event(self, event: 'DomainEvent') -> None:
         """Publish a domain event."""
         if self._event_publisher:
@@ -217,7 +217,7 @@ class Todo:
             clock=clock,
             event_publisher=event_publisher,
         )
-        
+
         # Publish TodoCreated event
         event = TodoCreatedEvent(
             todo_id=todo.id.value,
@@ -227,5 +227,5 @@ class Todo:
             occurred_at=todo.created_at,
         )
         todo._publish_event(event)
-        
+
         return todo

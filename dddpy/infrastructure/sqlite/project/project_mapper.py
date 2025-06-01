@@ -37,12 +37,8 @@ class ProjectMapper:
             description=ProjectDescription(project_row.description),
             todos=todos_dict,
             clock=clock,
-            created_at=datetime.fromtimestamp(
-                project_row.created_at / 1000, tz=UTC
-            ),
-            updated_at=datetime.fromtimestamp(
-                project_row.updated_at / 1000, tz=UTC
-            ),
+            created_at=datetime.fromtimestamp(project_row.created_at / 1000, tz=UTC),
+            updated_at=datetime.fromtimestamp(project_row.updated_at / 1000, tz=UTC),
         )
 
     @staticmethod

@@ -1,6 +1,5 @@
 """Todo schemas for Project API endpoints."""
 
-
 from pydantic import BaseModel, Field
 
 

@@ -10,7 +10,7 @@ from .todo_factory_selector import TodoFactorySelector, TodoCreationStrategy
 __all__ = [
     'TodoFactory',
     'AbstractTodoFactory',
-    'StandardTodoFactory', 
+    'StandardTodoFactory',
     'HighPriorityTodoFactory',
     'TodoFactoryProvider',
     'TodoFactorySelector',

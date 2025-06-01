@@ -10,7 +10,9 @@ from dddpy.domain.shared.events import get_event_publisher
 from dddpy.dto.project import AddTodoToProjectDto
 from dddpy.dto.todo import TodoOutputDto
 from dddpy.usecase.converter.todo_converter import TodoConverter
-from dddpy.usecase.assembler.event_aware_todo_create_assembler import EventAwareTodoCreateAssembler
+from dddpy.usecase.assembler.event_aware_todo_create_assembler import (
+    EventAwareTodoCreateAssembler,
+)
 
 
 class EventAwareAddTodoToProjectUseCase(ABC):
@@ -40,7 +42,7 @@ class EventAwareAddTodoToProjectUseCaseImpl(EventAwareAddTodoToProjectUseCase):
         event_publisher.clear_events()
 
         todo_entity = EventAwareTodoCreateAssembler.to_entity(dto, project_id)
-        
+
         # Projectに追加（TodoAddedToProjectイベント発行）
         project.add_todo_entity(todo_entity)
 
@@ -49,9 +51,9 @@ class EventAwareAddTodoToProjectUseCaseImpl(EventAwareAddTodoToProjectUseCase):
 
         # Log events for debugging/monitoring (optional)
         events = event_publisher.get_events()
-        print(f"Published {len(events)} domain events:")
+        print(f'Published {len(events)} domain events:')
         for event in events:
-            print(f"  - {event.event_type}: {event.to_dict()}")
+            print(f'  - {event.event_type}: {event.to_dict()}')
 
         # Convert to output DTO
         return TodoConverter.to_output_dto(todo_entity)

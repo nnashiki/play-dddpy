@@ -26,7 +26,11 @@ class TodoMapper:
         # dependenciesが空またはNoneの場合は空のdependenciesを設定
         dependencies = TodoDependencies.empty()
         if todo_row.dependencies and todo_row.dependencies.strip():
-            dep_ids = [TodoId(UUID(dep_id.strip())) for dep_id in todo_row.dependencies.split(',') if dep_id.strip()]
+            dep_ids = [
+                TodoId(UUID(dep_id.strip()))
+                for dep_id in todo_row.dependencies.split(',')
+                if dep_id.strip()
+            ]
             if dep_ids:
                 dependencies = TodoDependencies.from_list(dep_ids)
 
@@ -40,15 +44,9 @@ class TodoMapper:
             status=TodoStatus(todo_row.status),
             dependencies=dependencies,
             clock=clock,
-            created_at=datetime.fromtimestamp(
-                todo_row.created_at / 1000, tz=UTC
-            ),
-            updated_at=datetime.fromtimestamp(
-                todo_row.updated_at / 1000, tz=UTC
-            ),
-            completed_at=datetime.fromtimestamp(
-                todo_row.completed_at / 1000, tz=UTC
-            )
+            created_at=datetime.fromtimestamp(todo_row.created_at / 1000, tz=UTC),
+            updated_at=datetime.fromtimestamp(todo_row.updated_at / 1000, tz=UTC),
+            completed_at=datetime.fromtimestamp(todo_row.completed_at / 1000, tz=UTC)
             if todo_row.completed_at
             else None,
         )
@@ -57,10 +55,12 @@ class TodoMapper:
     def from_entity(todo: Todo) -> TodoModel:
         """ドメインエンティティ → DTO"""
         # dependenciesが空の場合は空文字列を設定
-        dependencies = ','.join(
-            [str(dep_id.value) for dep_id in todo.dependencies.values]
-        ) if todo.dependencies.values else ''
-        
+        dependencies = (
+            ','.join([str(dep_id.value) for dep_id in todo.dependencies.values])
+            if todo.dependencies.values
+            else ''
+        )
+
         return TodoModel(
             id=todo.id.value,
             project_id=todo.project_id.value,

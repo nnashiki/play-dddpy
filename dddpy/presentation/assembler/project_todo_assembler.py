@@ -22,11 +22,13 @@ class ProjectTodoAssembler:
         return ProjectTodoSchema(
             id=dto.id,
             title=dto.title,
-            description=dto.description or "",
+            description=dto.description or '',
             status=dto.status,
             dependencies=dto.dependencies,
             project_id=project_id,
             created_at=int(dto.created_at.timestamp() * 1000),
             updated_at=int(dto.updated_at.timestamp() * 1000),
-            completed_at=int(dto.completed_at.timestamp() * 1000) if dto.completed_at else None,
+            completed_at=int(dto.completed_at.timestamp() * 1000)
+            if dto.completed_at
+            else None,
         )
