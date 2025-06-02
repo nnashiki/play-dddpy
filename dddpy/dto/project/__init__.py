@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from dddpy.dto.todo import TodoOutputDto
 
@@ -12,15 +12,15 @@ class ProjectCreateDto:
     """DTO for creating a new Project."""
 
     name: str
-    description: str | None = None
+    description: Union[str, None] = None
 
 
 @dataclass
 class ProjectUpdateDto:
     """DTO for updating an existing Project."""
 
-    name: str | None = None
-    description: str | None = None
+    name: Union[str, None] = None
+    description: Union[str, None] = None
 
 
 @dataclass
@@ -29,7 +29,7 @@ class ProjectOutputDto:
 
     id: str
     name: str
-    description: str | None
+    description: Union[str, None]
     todos: list[TodoOutputDto]
     created_at: datetime
     updated_at: datetime
@@ -40,8 +40,8 @@ class AddTodoToProjectDto:
     """DTO for adding a Todo to a Project."""
 
     title: str
-    description: str | None = None
-    dependencies: list[str] | None = None
+    description: Union[str, None] = None
+    dependencies: Union[list[str], None] = None
 
 
 __all__ = [

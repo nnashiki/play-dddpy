@@ -1,7 +1,7 @@
 """Todo domain events."""
 
 from datetime import datetime
-from typing import Any
+from typing import Any, Union
 from uuid import UUID
 
 from dddpy.domain.shared.events import DomainEvent
@@ -15,8 +15,8 @@ class TodoCreatedEvent(DomainEvent):
         todo_id: UUID,
         project_id: UUID,
         title: str,
-        description: str | None = None,
-        occurred_at: datetime | None = None,
+        description: Union[str, None] = None,
+        occurred_at: Union[datetime, None] = None,
     ) -> None:
         super().__init__(todo_id, occurred_at)
         self.todo_id = todo_id
@@ -49,7 +49,7 @@ class TodoAddedToProjectEvent(DomainEvent):
         project_id: UUID,
         todo_id: UUID,
         todo_title: str,
-        occurred_at: datetime | None = None,
+        occurred_at: Union[datetime, None] = None,
     ) -> None:
         super().__init__(project_id, occurred_at)
         self.project_id = project_id

@@ -2,7 +2,7 @@
 
 from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import Any, Callable, Type, TYPE_CHECKING
+from typing import Any, Callable, Type, TYPE_CHECKING, Union
 from uuid import UUID, uuid4
 
 if TYPE_CHECKING:
@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 class DomainEvent(ABC):
     """Base class for all domain events."""
 
-    def __init__(self, aggregate_id: UUID, occurred_at: datetime | None = None) -> None:
+    def __init__(self, aggregate_id: UUID, occurred_at: Union[datetime, None] = None) -> None:
         self.event_id = uuid4()
         self.aggregate_id = aggregate_id
         self.occurred_at = occurred_at or datetime.now()
@@ -37,18 +37,18 @@ class EventDispatcher:
 
     def __init__(self) -> None:
         self._handlers: dict[
-            Type[DomainEvent], list[Callable[[DomainEvent], None]]
+            Type[DomainEvent], list[Callable[..., None]]
         ] = {}
 
     def register(
-        self, event_type: Type[DomainEvent], handler: Callable[[DomainEvent], None]
+        self, event_type: Type[DomainEvent], handler: Callable[..., None]
     ) -> None:
         """Register an event handler for a specific event type."""
         if event_type not in self._handlers:
             self._handlers[event_type] = []
         self._handlers[event_type].append(handler)
 
-    def dispatch(self, event: DomainEvent, session: 'Session | None' = None) -> None:
+    def dispatch(self, event: DomainEvent, session: Union['Session', None] = None) -> None:
         """Dispatch an event to all registered handlers."""
         event_type = type(event)
         if event_type in self._handlers:
@@ -58,9 +58,18 @@ class EventDispatcher:
                     import inspect
 
                     sig = inspect.signature(handler)
-                    if len(sig.parameters) == 2 and session is not None:
-                        handler(event, session)
+                    params = list(sig.parameters.keys())
+                    
+                    # Check if handler accepts session parameter
+                    if len(params) >= 2 and session is not None:
+                        # Try calling with both event and session
+                        try:
+                            handler(event, session)
+                        except TypeError:
+                            # Fallback to event only if TypeError occurs
+                            handler(event)
                     else:
+                        # Call with event only
                         handler(event)
                 except Exception as e:
                     # Log error but don't fail the main operation
@@ -72,7 +81,7 @@ class DomainEventPublisher:
 
     def __init__(self) -> None:
         self._events: list[DomainEvent] = []
-        self._dispatcher: EventDispatcher | None = None
+        self._dispatcher: Union[EventDispatcher, None] = None
 
     def set_dispatcher(self, dispatcher: EventDispatcher) -> None:
         """Set the event dispatcher for immediate event handling."""

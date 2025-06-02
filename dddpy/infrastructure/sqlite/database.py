@@ -1,5 +1,6 @@
 """Database configuration and session management for SQLite."""
 
+from typing import Any
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
@@ -19,7 +20,7 @@ SessionLocal = sessionmaker(
 )
 
 
-Base = declarative_base()
+Base: Any = declarative_base()
 
 
 def create_tables():

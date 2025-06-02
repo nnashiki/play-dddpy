@@ -6,6 +6,8 @@ from dddpy.domain.project.entities import Project
 from dddpy.domain.project.repositories import ProjectRepository
 from dddpy.domain.project.services import ProjectDomainService
 from dddpy.domain.project.value_objects import ProjectName
+from dddpy.domain.project.events.project_created_event import ProjectCreatedEvent
+from dddpy.domain.todo.events import TodoCreatedEvent
 from dddpy.domain.shared.events import DomainEventPublisher
 from dddpy.dto.project import ProjectCreateDto, ProjectOutputDto
 from dddpy.usecase.assembler.project_create_assembler import ProjectCreateAssembler
@@ -53,9 +55,9 @@ class CreateProjectUseCaseImpl(CreateProjectUseCase):
 
             # シンプルに直接ハンドラーを呼び出し（同一トランザクション）
             for event in project.get_events():
-                if event.event_type == 'ProjectCreated':
+                if event.event_type == 'ProjectCreated' and isinstance(event, ProjectCreatedEvent):
                     on_project_created(event, session)
-                elif event.event_type == 'TodoCreated':
+                elif event.event_type == 'TodoCreated' and isinstance(event, TodoCreatedEvent):
                     on_todo_created(event, session)
 
         # Convert to output DTO

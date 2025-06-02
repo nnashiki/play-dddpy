@@ -2,7 +2,7 @@
 
 from collections.abc import Mapping
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
 from dddpy.domain.project.exceptions import (
     DuplicateTodoTitleError,
@@ -47,12 +47,12 @@ class Project:
         self,
         id: ProjectId,
         name: ProjectName,
-        description: ProjectDescription | None = None,
-        todos: dict[TodoId, Todo] | None = None,
-        clock: Clock | None = None,
-        created_at: datetime | None = None,
-        updated_at: datetime | None = None,
-        event_publisher: 'DomainEventPublisher | None' = None,
+        description: Union[ProjectDescription, None] = None,
+        todos: Union[dict[TodoId, Todo], None] = None,
+        clock: Union[Clock, None] = None,
+        created_at: Union[datetime, None] = None,
+        updated_at: Union[datetime, None] = None,
+        event_publisher: Union['DomainEventPublisher', None] = None,
     ):
         """Initialize a new Project aggregate."""
         self._id = id
@@ -136,8 +136,8 @@ class Project:
     def add_todo(
         self,
         title: TodoTitle,
-        description: TodoDescriptionVO | None = None,
-        dependencies: list[TodoId] | None = None,
+        description: Union[TodoDescriptionVO, None] = None,
+        dependencies: Union[list[TodoId], None] = None,
     ) -> Todo:
         """Add a new Todo to the project with dependency validation"""
         # Validate todo count limit
@@ -233,9 +233,9 @@ class Project:
     def update_todo_by_id(
         self,
         todo_id: TodoId,
-        title: TodoTitle | None = None,
-        description: TodoDescriptionVO | None = None,
-        dependencies: list[TodoId] | None = None,
+        title: Union[TodoTitle, None] = None,
+        description: Union[TodoDescriptionVO, None] = None,
+        dependencies: Union[list[TodoId], None] = None,
     ) -> Todo:
         """Update a Todo by ID"""
         if todo_id not in self._todos:
@@ -376,8 +376,8 @@ class Project:
     @staticmethod
     def create(
         name: str,
-        description: str | None = None,
-        event_publisher: 'DomainEventPublisher | None' = None,
+        description: Union[str, None] = None,
+        event_publisher: Union['DomainEventPublisher', None] = None,
     ) -> 'Project':
         """Create a new Project"""
         project_name = ProjectName(name)

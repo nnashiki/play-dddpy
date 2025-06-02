@@ -1,7 +1,7 @@
 """This module provides the Todo entity representing a task or item to be completed."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
 from dddpy.domain.shared.clock import Clock, SystemClock
 from dddpy.domain.todo.exceptions import (
@@ -32,14 +32,14 @@ class Todo:
         id: TodoId,
         title: TodoTitle,
         project_id: 'ProjectId',
-        description: TodoDescription | None = None,
+        description: Union[TodoDescription, None] = None,
         status: TodoStatus = TodoStatus.NOT_STARTED,
-        dependencies: TodoDependencies | None = None,
-        clock: Clock | None = None,
-        created_at: datetime | None = None,
-        updated_at: datetime | None = None,
-        completed_at: datetime | None = None,
-        event_publisher: 'DomainEventPublisher | None' = None,
+        dependencies: Union[TodoDependencies, None] = None,
+        clock: Union[Clock, None] = None,
+        created_at: Union[datetime, None] = None,
+        updated_at: Union[datetime, None] = None,
+        completed_at: Union[datetime, None] = None,
+        event_publisher: Union['DomainEventPublisher', None] = None,
     ):
         """
         Initialize a new Todo entity.
@@ -79,7 +79,7 @@ class Todo:
         return self._title
 
     @property
-    def description(self) -> TodoDescription | None:
+    def description(self) -> Union[TodoDescription, None]:
         """Get the Todo's description"""
         return self._description
 
@@ -99,7 +99,7 @@ class Todo:
         return self._updated_at
 
     @property
-    def completed_at(self) -> datetime | None:
+    def completed_at(self) -> Union[datetime, None]:
         """Get the Todo's completion timestamp"""
         return self._completed_at
 
@@ -131,7 +131,7 @@ class Todo:
         self._title = new_title
         self._updated_at = self._clock.now()
 
-    def update_description(self, new_description: TodoDescription | None) -> None:
+    def update_description(self, new_description: Union[TodoDescription, None]) -> None:
         """Update the Todo's description"""
         self._description = new_description if new_description else None
         self._updated_at = self._clock.now()
@@ -181,7 +181,7 @@ class Todo:
         return self._status == TodoStatus.COMPLETED
 
     def is_overdue(
-        self, deadline: datetime, current_time: datetime | None = None
+        self, deadline: datetime, current_time: Union[datetime, None] = None
     ) -> bool:
         """
         Check if the Todo is overdue based on the given deadline.
@@ -201,10 +201,10 @@ class Todo:
     def create(
         title: TodoTitle,
         project_id: 'ProjectId',
-        description: TodoDescription | None = None,
-        dependencies: TodoDependencies | None = None,
-        clock: Clock | None = None,
-        event_publisher: 'DomainEventPublisher | None' = None,
+        description: Union[TodoDescription, None] = None,
+        dependencies: Union[TodoDependencies, None] = None,
+        clock: Union[Clock, None] = None,
+        event_publisher: Union['DomainEventPublisher', None] = None,
     ) -> 'Todo':
         """Create a new Todo"""
         todo_id = TodoId.generate()

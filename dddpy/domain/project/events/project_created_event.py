@@ -1,7 +1,7 @@
 """Project creation event."""
 
 from datetime import datetime
-from typing import Any
+from typing import Any, Union
 from uuid import UUID
 
 from dddpy.domain.shared.events import DomainEvent
@@ -14,8 +14,8 @@ class ProjectCreatedEvent(DomainEvent):
         self,
         project_id: UUID,
         name: str,
-        description: str | None = None,
-        occurred_at: datetime | None = None,
+        description: Union[str, None] = None,
+        occurred_at: Union[datetime, None] = None,
     ) -> None:
         super().__init__(project_id, occurred_at)
         self.project_id = project_id
