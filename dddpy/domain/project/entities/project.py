@@ -117,6 +117,15 @@ class Project:
         """Clear all events."""
         self._events.clear()
 
+    def set_event_publisher(
+        self, event_publisher: Union['DomainEventPublisher', None]
+    ) -> None:
+        """Set event publisher for this project and all its todos."""
+        self._event_publisher = event_publisher
+        # Also set for all existing todos
+        for todo in self._todos.values():
+            todo._event_publisher = event_publisher
+
     def _publish_event(self, event: 'DomainEvent') -> None:
         """Publish a domain event."""
         if self._event_publisher:
@@ -372,6 +381,47 @@ class Project:
             occurred_at=self._updated_at,
         )
         self._publish_event(event)
+
+    @classmethod
+    def reconstruct(
+        cls,
+        id: ProjectId,
+        name: ProjectName,
+        description: Union[ProjectDescription, None],
+        todos_snapshot: list[Todo],
+        created_at: datetime,
+        updated_at: datetime,
+        clock: Union[Clock, None] = None,
+        event_publisher: Union['DomainEventPublisher', None] = None,
+    ) -> 'Project':
+        """Reconstruct Project from persistence layer with proper invariant validation.
+
+        This factory method is designed for use by the infrastructure layer when
+        reconstructing Project aggregates from the database. It ensures that all
+        Todo entities are added through the proper add_todo_entity() method, which
+        maintains business invariants like duplicate title checks and circular
+        dependency validation.
+        """
+        # Create Project with empty todos dict initially
+        obj = cls(
+            id=id,
+            name=name,
+            description=description,
+            todos={},  # Start with empty dict
+            clock=clock,
+            created_at=created_at,
+            updated_at=updated_at,
+            event_publisher=event_publisher,
+        )
+
+        # Add each Todo through add_todo_entity to ensure invariants are maintained
+        for todo in todos_snapshot:
+            obj.add_todo_entity(todo)
+
+        # Clear events generated during reconstruction
+        obj.clear_events()
+
+        return obj
 
     @staticmethod
     def create(

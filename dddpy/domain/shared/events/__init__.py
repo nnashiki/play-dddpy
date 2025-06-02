@@ -84,16 +84,21 @@ class DomainEventPublisher:
     def __init__(self) -> None:
         self._events: list[DomainEvent] = []
         self._dispatcher: Union[EventDispatcher, None] = None
+        self._session: Union['Session', None] = None
 
     def set_dispatcher(self, dispatcher: EventDispatcher) -> None:
         """Set the event dispatcher for immediate event handling."""
         self._dispatcher = dispatcher
 
+    def set_session(self, session: Union['Session', None]) -> None:
+        """Set the database session for event handlers."""
+        self._session = session
+
     def publish(self, event: DomainEvent) -> None:
         """Publish a domain event (collect for later processing and dispatch immediately if dispatcher is set)."""
         self._events.append(event)
         if self._dispatcher:
-            self._dispatcher.dispatch(event)
+            self._dispatcher.dispatch(event, self._session)
 
     def get_events(self) -> list[DomainEvent]:
         """Get all published events."""

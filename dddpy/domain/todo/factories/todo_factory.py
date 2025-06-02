@@ -1,6 +1,6 @@
 """TodoFactory for creating Todo entities with domain value objects."""
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
 from dddpy.domain.shared.clock import Clock, SystemClock
 from dddpy.domain.todo.entities import Todo
@@ -12,6 +12,7 @@ from dddpy.domain.todo.value_objects import (
 
 if TYPE_CHECKING:
     from dddpy.domain.project.value_objects import ProjectId
+    from dddpy.domain.shared.events import DomainEventPublisher
 
 
 class TodoFactory:
@@ -24,6 +25,7 @@ class TodoFactory:
         description: TodoDescription | None = None,
         dependencies: TodoDependencies | None = None,
         clock: Clock | None = None,
+        event_publisher: Union['DomainEventPublisher', None] = None,
     ) -> Todo:
         """ドメインVOからTodoエンティティを生成
 
@@ -33,6 +35,7 @@ class TodoFactory:
             description: Todoの説明（任意）
             dependencies: Todoの依存関係（任意）
             clock: 時刻取得用クロック（任意、デフォルトはSystemClock）
+            event_publisher: イベント発行用パブリッシャー（任意）
 
         Returns:
             Todo: 生成されたTodoエンティティ
@@ -43,4 +46,5 @@ class TodoFactory:
             description=description,
             dependencies=dependencies,
             clock=clock or SystemClock(),
+            event_publisher=event_publisher,
         )

@@ -70,8 +70,9 @@ def get_create_project_usecase(
 
 def get_add_todo_to_project_usecase(
     project_repository: ProjectRepository = Depends(get_project_repository),
+    event_publisher: DomainEventPublisher = Depends(get_event_publisher_di),
 ) -> AddTodoToProjectUseCase:
-    return new_add_todo_to_project_usecase(project_repository)
+    return new_add_todo_to_project_usecase(project_repository, event_publisher)
 
 
 def get_find_projects_usecase(

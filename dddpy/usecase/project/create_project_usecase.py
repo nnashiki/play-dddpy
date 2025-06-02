@@ -11,8 +11,6 @@ from dddpy.domain.todo.events import TodoCreatedEvent
 from dddpy.domain.shared.events import DomainEventPublisher
 from dddpy.dto.project import ProjectCreateDto, ProjectOutputDto
 from dddpy.usecase.assembler.project_create_assembler import ProjectCreateAssembler
-from dddpy.infrastructure.handlers.project_history_handler import on_project_created
-from dddpy.infrastructure.handlers.todo_history_handler import on_todo_created
 
 
 class CreateProjectUseCase(ABC):
@@ -43,26 +41,17 @@ class CreateProjectUseCaseImpl(CreateProjectUseCase):
         ):
             raise ValueError(f"Project name '{dto.name}' already exists")
 
+        # Set database session for event handlers
+        session = self.project_repository.get_session()
+        self.event_publisher.set_session(session)
+
         # Create project using Assembler with event publisher
         project = ProjectCreateAssembler.to_entity(dto, self.event_publisher)
 
         # Save project
         self.project_repository.save(project)
 
-        # Handle events (履歴保存など) - 同一トランザクション内で直接実行
-        if project.has_events():
-            session = self.project_repository.get_session()
-
-            # シンプルに直接ハンドラーを呼び出し（同一トランザクション）
-            for event in project.get_events():
-                if event.event_type == 'ProjectCreated' and isinstance(
-                    event, ProjectCreatedEvent
-                ):
-                    on_project_created(event, session)
-                elif event.event_type == 'TodoCreated' and isinstance(
-                    event, TodoCreatedEvent
-                ):
-                    on_todo_created(event, session)
+        # Events are automatically published via DomainEventPublisher during project creation
 
         # Convert to output DTO
         return ProjectOutputDto(

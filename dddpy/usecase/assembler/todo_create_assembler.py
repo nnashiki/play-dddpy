@@ -11,6 +11,7 @@ from dddpy.domain.todo.value_objects import (
     TodoDependencies,
     TodoId,
 )
+from dddpy.domain.shared.events import DomainEventPublisher
 from dddpy.dto.todo import TodoCreateDto
 from dddpy.domain.todo.entities import Todo
 
@@ -34,12 +35,17 @@ class TodoCreateAssembler:
     """
 
     @staticmethod
-    def to_entity(dto: TodoCreationData, project_id_str: str) -> Todo:
+    def to_entity(
+        dto: TodoCreationData,
+        project_id_str: str,
+        event_publisher: DomainEventPublisher | None = None,
+    ) -> Todo:
         """Todo作成用DTOからTodoエンティティを生成
 
         Args:
             dto: Todo作成用DTO（TodoCreateDto, AddTodoToProjectDto等対応）
             project_id_str: プロジェクトIDの文字列表現
+            event_publisher: イベント発行用パブリッシャー
 
         Returns:
             Todo: 生成されたTodoエンティティ
@@ -52,6 +58,7 @@ class TodoCreateAssembler:
             description=dto.description,
             dependencies=dto.dependencies,
             project_id_str=project_id_str,
+            event_publisher=event_publisher,
         )
 
     @staticmethod
@@ -60,6 +67,7 @@ class TodoCreateAssembler:
         description: str | None,
         dependencies: list[str] | None,
         project_id_str: str,
+        event_publisher: DomainEventPublisher | None = None,
     ) -> Todo:
         """共通のTodo作成ロジック
 
@@ -68,6 +76,7 @@ class TodoCreateAssembler:
             description: Todo説明（任意）
             dependencies: 依存Todo ID文字列リスト（任意）
             project_id_str: プロジェクトIDの文字列表現
+            event_publisher: イベント発行用パブリッシャー（任意）
 
         Returns:
             Todo: 生成されたTodoエンティティ
@@ -89,4 +98,5 @@ class TodoCreateAssembler:
             project_id=project_id,
             description=description_vo,
             dependencies=dependencies_vo,
+            event_publisher=event_publisher,
         )

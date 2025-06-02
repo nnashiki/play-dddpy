@@ -27,18 +27,18 @@ class ProjectMapper:
         clock=SystemClock(),
     ) -> Project:
         """DTO → ドメインエンティティ（集約完成形で返す）"""
-        todos_dict: dict[TodoId, Todo] = {
-            TodoId(t.id): TodoMapper.to_entity(t, clock) for t in todo_rows
-        }
+        # Convert TodoModels to Todo entities
+        todos = [TodoMapper.to_entity(t, clock) for t in todo_rows]
 
-        return Project(
+        # Use reconstruct factory to ensure proper invariant validation
+        return Project.reconstruct(
             id=ProjectId(project_row.id),
             name=ProjectName(project_row.name),
             description=ProjectDescription(project_row.description),
-            todos=todos_dict,
-            clock=clock,
+            todos_snapshot=todos,
             created_at=datetime.fromtimestamp(project_row.created_at / 1000, tz=UTC),
             updated_at=datetime.fromtimestamp(project_row.updated_at / 1000, tz=UTC),
+            clock=clock,
         )
 
     @staticmethod

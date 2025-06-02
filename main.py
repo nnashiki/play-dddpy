@@ -7,6 +7,7 @@ from logging import config
 from fastapi import FastAPI
 
 from dddpy.infrastructure.sqlite.database import create_tables, engine
+from dddpy.infrastructure.handlers.event_setup import initialize_event_system
 from dddpy.presentation.api.project.handlers.project_api_route_handler import (
     ProjectApiRouteHandler,
 )
@@ -21,8 +22,9 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Initialize database tables on startup and cleanup on shutdown."""
+    """Initialize database tables and event system on startup and cleanup on shutdown."""
     create_tables()
+    initialize_event_system()  # Initialize event handlers
     yield
     engine.dispose()
 
