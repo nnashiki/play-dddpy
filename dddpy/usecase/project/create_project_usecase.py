@@ -55,9 +55,13 @@ class CreateProjectUseCaseImpl(CreateProjectUseCase):
 
             # シンプルに直接ハンドラーを呼び出し（同一トランザクション）
             for event in project.get_events():
-                if event.event_type == 'ProjectCreated' and isinstance(event, ProjectCreatedEvent):
+                if event.event_type == 'ProjectCreated' and isinstance(
+                    event, ProjectCreatedEvent
+                ):
                     on_project_created(event, session)
-                elif event.event_type == 'TodoCreated' and isinstance(event, TodoCreatedEvent):
+                elif event.event_type == 'TodoCreated' and isinstance(
+                    event, TodoCreatedEvent
+                ):
                     on_todo_created(event, session)
 
         # Convert to output DTO

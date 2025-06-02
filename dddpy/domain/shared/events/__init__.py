@@ -12,7 +12,9 @@ if TYPE_CHECKING:
 class DomainEvent(ABC):
     """Base class for all domain events."""
 
-    def __init__(self, aggregate_id: UUID, occurred_at: Union[datetime, None] = None) -> None:
+    def __init__(
+        self, aggregate_id: UUID, occurred_at: Union[datetime, None] = None
+    ) -> None:
         self.event_id = uuid4()
         self.aggregate_id = aggregate_id
         self.occurred_at = occurred_at or datetime.now()
@@ -36,9 +38,7 @@ class EventDispatcher:
     """Event dispatcher for registering and dispatching domain events."""
 
     def __init__(self) -> None:
-        self._handlers: dict[
-            Type[DomainEvent], list[Callable[..., None]]
-        ] = {}
+        self._handlers: dict[Type[DomainEvent], list[Callable[..., None]]] = {}
 
     def register(
         self, event_type: Type[DomainEvent], handler: Callable[..., None]
@@ -48,7 +48,9 @@ class EventDispatcher:
             self._handlers[event_type] = []
         self._handlers[event_type].append(handler)
 
-    def dispatch(self, event: DomainEvent, session: Union['Session', None] = None) -> None:
+    def dispatch(
+        self, event: DomainEvent, session: Union['Session', None] = None
+    ) -> None:
         """Dispatch an event to all registered handlers."""
         event_type = type(event)
         if event_type in self._handlers:
@@ -59,7 +61,7 @@ class EventDispatcher:
 
                     sig = inspect.signature(handler)
                     params = list(sig.parameters.keys())
-                    
+
                     # Check if handler accepts session parameter
                     if len(params) >= 2 and session is not None:
                         # Try calling with both event and session
