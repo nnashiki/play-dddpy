@@ -63,13 +63,13 @@ class TodoFactorySelector:
         if strategy == TodoCreationStrategy.STANDARD:
             standard_factory = StandardTodoFactory()
             return standard_factory.create_todo(
-                title, project_id, description, dependencies, clock
+                title, project_id, description, dependencies, clock, event_publisher
             )
 
         elif strategy == TodoCreationStrategy.HIGH_PRIORITY:
             high_priority_factory = HighPriorityTodoFactory()
             return high_priority_factory.create_todo(
-                title, project_id, description, dependencies, clock
+                title, project_id, description, dependencies, clock, event_publisher
             )
 
         elif strategy == TodoCreationStrategy.ENTITY_DIRECT:
@@ -80,7 +80,7 @@ class TodoFactorySelector:
         elif strategy == TodoCreationStrategy.LEGACY:
             # Use legacy TodoFactory.create for backward compatibility
             return TodoFactory.create(
-                title, project_id, description, dependencies, clock
+                title, project_id, description, dependencies, clock, event_publisher
             )
 
         else:

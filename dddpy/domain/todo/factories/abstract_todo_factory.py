@@ -1,7 +1,7 @@
 """Abstract Factory for Todo creation with different strategies."""
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
 from dddpy.domain.shared.clock import Clock, SystemClock
 from dddpy.domain.todo.entities import Todo
@@ -13,6 +13,7 @@ from dddpy.domain.todo.value_objects import (
 
 if TYPE_CHECKING:
     from dddpy.domain.project.value_objects import ProjectId
+    from dddpy.domain.shared.events import DomainEventPublisher
 
 
 class AbstractTodoFactory(ABC):
@@ -26,6 +27,7 @@ class AbstractTodoFactory(ABC):
         description: TodoDescription | None = None,
         dependencies: TodoDependencies | None = None,
         clock: Clock | None = None,
+        event_publisher: Union['DomainEventPublisher', None] = None,
     ) -> Todo:
         """Create a Todo entity with specific creation strategy."""
 
@@ -40,6 +42,7 @@ class StandardTodoFactory(AbstractTodoFactory):
         description: TodoDescription | None = None,
         dependencies: TodoDependencies | None = None,
         clock: Clock | None = None,
+        event_publisher: Union['DomainEventPublisher', None] = None,
     ) -> Todo:
         """Create a standard Todo entity."""
         return Todo.create(
@@ -48,6 +51,7 @@ class StandardTodoFactory(AbstractTodoFactory):
             description=description,
             dependencies=dependencies,
             clock=clock or SystemClock(),
+            event_publisher=event_publisher,
         )
 
 
@@ -61,6 +65,7 @@ class HighPriorityTodoFactory(AbstractTodoFactory):
         description: TodoDescription | None = None,
         dependencies: TodoDependencies | None = None,
         clock: Clock | None = None,
+        event_publisher: Union['DomainEventPublisher', None] = None,
     ) -> Todo:
         """Create a high-priority Todo entity with enhanced validation."""
         # Add high-priority specific validation
@@ -77,6 +82,7 @@ class HighPriorityTodoFactory(AbstractTodoFactory):
             description=description,
             dependencies=dependencies,
             clock=clock or SystemClock(),
+            event_publisher=event_publisher,
         )
 
         # Future: Add priority-specific domain events or metadata
