@@ -8,6 +8,7 @@ from dddpy.dto.project import AddTodoToProjectDto, ProjectCreateDto
 from dddpy.infrastructure.di.injection import (
     get_add_todo_to_project_usecase,
     get_create_project_usecase,
+    get_create_project_with_uow_usecase,
     get_delete_project_usecase,
     get_find_projects_usecase,
 )
@@ -21,6 +22,9 @@ from dddpy.usecase.project import (
     AddTodoToProjectUseCase,
     CreateProjectUseCase,
     FindProjectsUseCase,
+)
+from dddpy.usecase.project.create_project_with_uow_usecase import (
+    CreateProjectWithUoWUseCase,
 )
 from dddpy.usecase.project.delete_project_usecase import DeleteProjectUseCase
 
@@ -58,6 +62,27 @@ class ProjectApiRouteHandler:
             data: ProjectCreateSchema,
             usecase: CreateProjectUseCase = Depends(get_create_project_usecase),
         ):
+            # Convert request schema to DTO
+            dto = ProjectCreateDto(
+                name=data.name,
+                description=data.description,
+            )
+
+            project_output = usecase.execute(dto)
+            return ProjectAssembler.to_schema(project_output)
+
+        @app.post(
+            '/projects-with-outbox',
+            response_model=ProjectSchema,
+            status_code=201,
+        )
+        def create_project_with_outbox(
+            data: ProjectCreateSchema,
+            usecase: CreateProjectWithUoWUseCase = Depends(
+                get_create_project_with_uow_usecase
+            ),
+        ):
+            """Create project with transactional outbox pattern."""
             # Convert request schema to DTO
             dto = ProjectCreateDto(
                 name=data.name,

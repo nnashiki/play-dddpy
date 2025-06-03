@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from dddpy.domain.project.repositories import ProjectRepository
 from dddpy.domain.shared.events import get_event_publisher, DomainEventPublisher
 from dddpy.infrastructure.sqlite.database import SessionLocal
+from dddpy.infrastructure.sqlite.uow import SqlAlchemyUnitOfWork
 from dddpy.infrastructure.sqlite.project.project_repository import (
     new_project_repository,
 )
@@ -25,6 +26,10 @@ from dddpy.usecase.project import (
     new_find_projects_usecase,
     new_start_todo_through_project_usecase,
     new_update_todo_through_project_usecase,
+)
+from dddpy.usecase.project.create_project_with_uow_usecase import (
+    CreateProjectWithUoWUseCase,
+    new_create_project_with_uow_usecase,
 )
 from dddpy.usecase.project.delete_project_usecase import (
     DeleteProjectUseCase,
@@ -49,6 +54,12 @@ def get_session() -> Iterator[Session]:
         session.close()
 
 
+def get_uow() -> Iterator[SqlAlchemyUnitOfWork]:
+    """Provide a Unit of Work with transactional outbox support."""
+    with SqlAlchemyUnitOfWork() as uow:
+        yield uow
+
+
 def get_event_publisher_di() -> DomainEventPublisher:
     """Get event publisher from DI container."""
     return get_event_publisher()
@@ -66,6 +77,13 @@ def get_create_project_usecase(
     event_publisher: DomainEventPublisher = Depends(get_event_publisher_di),
 ) -> CreateProjectUseCase:
     return new_create_project_usecase(project_repository, event_publisher)
+
+
+def get_create_project_with_uow_usecase(
+    uow: SqlAlchemyUnitOfWork = Depends(get_uow),
+) -> CreateProjectWithUoWUseCase:
+    """Get CreateProjectUseCase with Unit of Work support."""
+    return new_create_project_with_uow_usecase(uow)
 
 
 def get_add_todo_to_project_usecase(

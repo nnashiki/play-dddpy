@@ -95,10 +95,8 @@ class DomainEventPublisher:
         self._session = session
 
     def publish(self, event: DomainEvent) -> None:
-        """Publish a domain event (collect for later processing and dispatch immediately if dispatcher is set)."""
+        """Collect events for later flushing (no side-effects)."""
         self._events.append(event)
-        if self._dispatcher:
-            self._dispatcher.dispatch(event, self._session)
 
     def get_events(self) -> list[DomainEvent]:
         """Get all published events."""

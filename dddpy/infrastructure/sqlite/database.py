@@ -32,5 +32,6 @@ def create_tables():
     )
     from dddpy.infrastructure.sqlite.todo.todo_model import TodoModel
     from dddpy.infrastructure.sqlite.todo.todo_history_model import TodoHistoryModel
+    from dddpy.infrastructure.sqlite.outbox.outbox_model import OutboxModel
 
     Base.metadata.create_all(bind=engine)
