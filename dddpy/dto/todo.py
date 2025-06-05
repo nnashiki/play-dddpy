@@ -32,6 +32,7 @@ class TodoOutputDto:
     description: Union[str, None]
     status: str
     dependencies: list[str]
+    project_id: str
     created_at: datetime
     updated_at: datetime
     completed_at: Union[datetime, None]

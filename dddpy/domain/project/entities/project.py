@@ -30,7 +30,7 @@ from dddpy.domain.todo.value_objects import (
 from dddpy.domain.todo.value_objects import (
     TodoDescription as TodoDescriptionVO,
 )
-from dddpy.domain.todo.events import TodoAddedToProjectEvent
+from dddpy.domain.todo.events import TodoAddedToProjectEvent, TodoUpdatedEvent, TodoStartedEvent, TodoCompletedEvent
 from dddpy.domain.project.events.project_created_event import ProjectCreatedEvent
 
 if TYPE_CHECKING:
@@ -251,14 +251,17 @@ class Project:
             raise TodoNotFoundError()
 
         todo = self._todos[todo_id]
+        updated = False
 
         if title is not None:
             # Validate no duplicate title (excluding current todo)
             self._validate_no_duplicate_title_excluding(title, todo_id)
             todo.update_title(title)
+            updated = True
 
         if description is not None:
             todo.update_description(description)
+            updated = True
 
         if dependencies is not None:
             # Validate dependencies exist
@@ -270,8 +273,22 @@ class Project:
             # Update dependencies
             deps = TodoDependencies.from_list(dependencies, self_id=todo_id)
             todo._set_dependencies(deps)
+            updated = True
 
         self._updated_at = self._clock.now()
+
+        # Publish TodoUpdated event if any field was updated
+        if updated:
+            event = TodoUpdatedEvent(
+                todo_id=todo.id.value,
+                project_id=self._id.value,
+                title=todo.title.value,
+                description=todo.description.value if todo.description else None,
+                dependencies=[str(dep.value) for dep in todo.dependencies.values],
+                occurred_at=self._updated_at,
+            )
+            self._publish_event(event)
+
         return todo
 
     def start_todo_by_id(self, todo_id: TodoId) -> Todo:
@@ -289,6 +306,16 @@ class Project:
 
         todo.start()
         self._updated_at = self._clock.now()
+        
+        # Publish TodoStarted event
+        event = TodoStartedEvent(
+            todo_id=todo.id.value,
+            project_id=self._id.value,
+            title=todo.title.value,
+            occurred_at=self._updated_at,
+        )
+        self._publish_event(event)
+        
         return todo
 
     def complete_todo_by_id(self, todo_id: TodoId) -> Todo:
@@ -299,6 +326,16 @@ class Project:
         todo = self._todos[todo_id]
         todo.complete()
         self._updated_at = self._clock.now()
+        
+        # Publish TodoCompleted event
+        event = TodoCompletedEvent(
+            todo_id=todo.id.value,
+            project_id=self._id.value,
+            title=todo.title.value,
+            occurred_at=self._updated_at,
+        )
+        self._publish_event(event)
+        
         return todo
 
     def _validate_dependencies_exist(self, dependency_ids: list[TodoId]) -> None:

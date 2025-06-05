@@ -1,4 +1,4 @@
-"""Tests for CompleteTodoThroughProjectUseCase."""
+"""Tests for StartTodoThroughProjectUseCase."""
 
 import pytest
 from sqlalchemy import create_engine
@@ -6,12 +6,7 @@ from sqlalchemy.orm import sessionmaker
 
 from dddpy.domain.shared.events import get_event_publisher
 from dddpy.domain.project.exceptions import ProjectNotFoundError
-from dddpy.domain.todo.exceptions import (
-    TodoDependencyNotCompletedError,
-    TodoNotFoundError,
-    TodoNotStartedError,
-    TodoAlreadyCompletedError,
-)
+from dddpy.domain.todo.exceptions import TodoDependencyNotCompletedError, TodoNotFoundError, TodoAlreadyStartedError
 from dddpy.infrastructure.sqlite.database import Base
 from dddpy.infrastructure.sqlite.uow import SqlAlchemyUnitOfWork
 from dddpy.infrastructure.sqlite.outbox.outbox_model import OutboxModel
@@ -28,10 +23,6 @@ from dddpy.usecase.project.add_todo_to_project_usecase import (
 from dddpy.usecase.project.start_todo_through_project_usecase import (
     StartTodoThroughProjectUseCase,
     new_start_todo_through_project_usecase,
-)
-from dddpy.usecase.project.complete_todo_through_project_usecase import (
-    CompleteTodoThroughProjectUseCase,
-    new_complete_todo_through_project_usecase,
 )
 
 
@@ -81,84 +72,74 @@ def start_todo_usecase(test_uow):
     return new_start_todo_through_project_usecase(test_uow)
 
 
-@pytest.fixture
-def complete_todo_usecase(test_uow):
-    """Create CompleteTodoThroughProjectUseCase for testing."""
-    return new_complete_todo_through_project_usecase(test_uow)
+class TestStartTodoThroughProjectUseCase:
+    """Test cases for StartTodoThroughProjectUseCase."""
 
-
-class TestCompleteTodoThroughProjectUseCase:
-    """Test cases for CompleteTodoThroughProjectUseCase."""
-
-    def test_complete_todo_successfully_saves_to_outbox(
+    def test_start_todo_successfully_saves_to_outbox(
         self,
         create_project_usecase: CreateProjectUseCase,
         add_todo_usecase: AddTodoToProjectUseCase,
         start_todo_usecase: StartTodoThroughProjectUseCase,
-        complete_todo_usecase: CompleteTodoThroughProjectUseCase,
         test_session_factory,
     ):
-        """Test successful todo completion saves event to outbox."""
+        """Test successful todo start saves event to outbox."""
         # Create project
         project_dto = ProjectCreateDto(
-            name='Complete Todo Test Project',
-            description='Project for testing todo completion',
+            name='Start Todo Test Project',
+            description='Project for testing todo start',
         )
         created_project = create_project_usecase.execute(project_dto)
 
         # Add todo to project
         todo_dto = AddTodoToProjectDto(
-            title='Todo to Complete',
-            description='This todo will be completed',
+            title='Todo to Start',
+            description='This todo will be started',
             dependencies=[],
         )
         added_todo = add_todo_usecase.execute(created_project.id, todo_dto)
 
-        # Start the todo first (required before completion)
-        start_todo_usecase.execute(created_project.id, added_todo.id)
-
-        # Before completion: Check outbox has creation and start events
+        # Before starting: Check outbox has creation events only
         with test_session_factory() as session:
             outbox_count_before = session.query(OutboxModel).count()
-            assert outbox_count_before == 4  # ProjectCreated + TodoCreated + TodoAddedToProject + TodoStarted
+            assert outbox_count_before == 3  # ProjectCreated + TodoCreated + TodoAddedToProject
 
-        # Complete the todo
-        result = complete_todo_usecase.execute(created_project.id, added_todo.id)
+        # Execute start todo
+        result = start_todo_usecase.execute(created_project.id, added_todo.id)
 
-        # Verify todo was completed successfully
+        # Verify todo was started successfully
         assert result.id == added_todo.id
-        assert result.title == 'Todo to Complete'
-        assert result.status == 'completed'
-        assert result.description == 'This todo will be completed'
+        assert result.title == 'Todo to Start'
+        assert result.status == 'in_progress'
+        assert result.description == 'This todo will be started'
 
-        # After completion: Check outbox has TodoCompleted event
+        # After starting: Check outbox has TodoStarted event
         with test_session_factory() as session:
             outbox_entries = session.query(OutboxModel).all()
-            assert len(outbox_entries) == 5
+            assert len(outbox_entries) == 4
 
-            # Find the TodoCompleted event
-            complete_event = None
+            # Find the TodoStarted event
+            start_event = None
             for entry in outbox_entries:
-                if entry.event_type == 'TodoCompleted':
-                    complete_event = entry
+                if entry.event_type == 'TodoStarted':
+                    start_event = entry
                     break
 
-            assert complete_event is not None
-            assert complete_event.event_type == 'TodoCompleted'
-            assert str(complete_event.aggregate_id) == added_todo.id
-            assert complete_event.published is False
+            assert start_event is not None
+            assert start_event.event_type == 'TodoStarted'
+            assert str(start_event.aggregate_id) == added_todo.id
+            assert start_event.published is False
 
             # Verify payload contains expected data
-            payload = complete_event.payload
-            assert payload['event_type'] == 'TodoCompleted'
+            payload = start_event.payload
+            assert payload['event_type'] == 'TodoStarted'
             assert payload['todo_id'] == added_todo.id
             assert payload['project_id'] == created_project.id
-            assert payload['title'] == 'Todo to Complete'
+            assert payload['title'] == 'Todo to Start'
 
-    def test_complete_todo_in_nonexistent_project_fails_and_rolls_back_outbox(
-        self, complete_todo_usecase: CompleteTodoThroughProjectUseCase, test_session_factory
+    def test_start_todo_in_nonexistent_project_fails_and_rolls_back_outbox(
+        self, start_todo_usecase: StartTodoThroughProjectUseCase, test_session_factory
     ):
-        """Test completing todo in nonexistent project fails and rolls back outbox."""
+        """Test starting todo in nonexistent project fails and rolls back outbox."""
         nonexistent_project_id = '550e8400-e29b-41d4-a716-446655440000'
         nonexistent_todo_id = '550e8400-e29b-41d4-a716-446655440001'
 
@@ -169,7 +150,7 @@ class TestCompleteTodoThroughProjectUseCase:
 
         # Should raise ProjectNotFoundError
         with pytest.raises(ProjectNotFoundError):
-            complete_todo_usecase.execute(nonexistent_project_id, nonexistent_todo_id)
+            start_todo_usecase.execute(nonexistent_project_id, nonexistent_todo_id)
 
         # After: Check outbox remains empty (rollback worked)
         with test_session_factory() as session:
@@ -177,17 +158,17 @@ class TestCompleteTodoThroughProjectUseCase:
             assert outbox_count_after == outbox_count_before
             assert outbox_count_after == 0
 
-    def test_complete_nonexistent_todo_fails_and_rolls_back_outbox(
+    def test_start_nonexistent_todo_fails_and_rolls_back_outbox(
         self,
         create_project_usecase: CreateProjectUseCase,
-        complete_todo_usecase: CompleteTodoThroughProjectUseCase,
+        start_todo_usecase: StartTodoThroughProjectUseCase,
         test_session_factory,
     ):
-        """Test completing nonexistent todo fails and rolls back outbox."""
+        """Test starting nonexistent todo fails and rolls back outbox."""
         # Create project
         project_dto = ProjectCreateDto(
             name='Project for Nonexistent Todo',
-            description='Project for testing nonexistent todo completion',
+            description='Project for testing nonexistent todo start',
         )
         created_project = create_project_usecase.execute(project_dto)
 
@@ -200,7 +181,7 @@ class TestCompleteTodoThroughProjectUseCase:
 
         # Should raise TodoNotFoundError
         with pytest.raises(TodoNotFoundError):
-            complete_todo_usecase.execute(created_project.id, nonexistent_todo_id)
+            start_todo_usecase.execute(created_project.id, nonexistent_todo_id)
 
         # After: Check outbox count remains the same (rollback worked)
         with test_session_factory() as session:
@@ -208,80 +189,45 @@ class TestCompleteTodoThroughProjectUseCase:
             assert outbox_count_after == outbox_count_before
             assert outbox_count_after == 1
 
-    def test_complete_not_started_todo_fails_and_rolls_back(
-        self,
-        create_project_usecase: CreateProjectUseCase,
-        add_todo_usecase: AddTodoToProjectUseCase,
-        complete_todo_usecase: CompleteTodoThroughProjectUseCase,
-        test_session_factory,
-    ):
-        """Test completing not started todo fails and rolls back."""
-        # Create project
-        project_dto = ProjectCreateDto(
-            name='Not Started Test Project',
-            description='Project for testing not started todo completion',
-        )
-        created_project = create_project_usecase.execute(project_dto)
-
-        # Add todo but don't start it
-        todo_dto = AddTodoToProjectDto(
-            title='Not Started Todo',
-            description='This todo is not started',
-            dependencies=[],
-        )
-        added_todo = add_todo_usecase.execute(created_project.id, todo_dto)
-
-        # Before: Check outbox has creation events
-        with test_session_factory() as session:
-            outbox_count_before = session.query(OutboxModel).count()
-            assert outbox_count_before == 3  # ProjectCreated + TodoCreated + TodoAddedToProject
-
-        # Try to complete todo without starting it
-        with pytest.raises(TodoNotStartedError):
-            complete_todo_usecase.execute(created_project.id, added_todo.id)
-
-        # After: Check outbox count remains the same (rollback worked)
-        with test_session_factory() as session:
-            outbox_count_after = session.query(OutboxModel).count()
-            assert outbox_count_after == outbox_count_before
-            assert outbox_count_after == 3
-
-    def test_complete_already_completed_todo_fails_and_rolls_back(
+    def test_start_todo_with_incomplete_dependencies_fails_and_rolls_back(
         self,
         create_project_usecase: CreateProjectUseCase,
         add_todo_usecase: AddTodoToProjectUseCase,
         start_todo_usecase: StartTodoThroughProjectUseCase,
-        complete_todo_usecase: CompleteTodoThroughProjectUseCase,
         test_session_factory,
     ):
-        """Test completing already completed todo fails and rolls back."""
-        # Create project and todo
+        """Test starting todo with incomplete dependencies fails and rolls back."""
+        # Create project
         project_dto = ProjectCreateDto(
-            name='Already Completed Test Project',
-            description='Project for testing already completed todo',
+            name='Dependency Test Project',
+            description='Project for testing dependencies',
         )
         created_project = create_project_usecase.execute(project_dto)
 
-        todo_dto = AddTodoToProjectDto(
-            title='Todo to Complete Twice',
-            description='This todo will be completed twice',
+        # Add first todo (dependency)
+        dependency_dto = AddTodoToProjectDto(
+            title='Dependency Todo',
+            description='This todo must be completed first',
             dependencies=[],
         )
-        added_todo = add_todo_usecase.execute(created_project.id, todo_dto)
+        dependency_todo = add_todo_usecase.execute(created_project.id, dependency_dto)
 
-        # Start and complete todo first time (should succeed)
-        start_todo_usecase.execute(created_project.id, added_todo.id)
-        result1 = complete_todo_usecase.execute(created_project.id, added_todo.id)
-        assert result1.status == 'completed'
+        # Add second todo that depends on the first
+        dependent_dto = AddTodoToProjectDto(
+            title='Dependent Todo',
+            description='This todo depends on the first',
+            dependencies=[dependency_todo.id],
+        )
+        dependent_todo = add_todo_usecase.execute(created_project.id, dependent_dto)
 
-        # Before second completion: Check outbox has 5 events
+        # Before: Check outbox has creation events
         with test_session_factory() as session:
             outbox_count_before = session.query(OutboxModel).count()
-            assert outbox_count_before == 5  # ProjectCreated + TodoCreated + TodoAddedToProject + TodoStarted + TodoCompleted
+            assert outbox_count_before == 5  # ProjectCreated + 2*(TodoCreated + TodoAddedToProject)
 
-        # Try to complete todo second time (should fail)
-        with pytest.raises(TodoAlreadyCompletedError):
-            complete_todo_usecase.execute(created_project.id, added_todo.id)
+        # Try to start dependent todo without completing dependency
+        with pytest.raises(TodoDependencyNotCompletedError):
+            start_todo_usecase.execute(created_project.id, dependent_todo.id)
 
         # After: Check outbox count remains the same (rollback worked)
         with test_session_factory() as session:
@@ -289,19 +235,60 @@ class TestCompleteTodoThroughProjectUseCase:
             assert outbox_count_after == outbox_count_before
             assert outbox_count_after == 5
 
-    def test_multiple_todo_completions_create_multiple_outbox_entries(
+    def test_start_already_started_todo_fails_and_rolls_back(
+        self,
+        create_project_usecase: CreateProjectUseCase,
+        add_todo_usecase: AddTodoToProjectUseCase,
+        start_todo_usecase: StartTodoThroughProjectUseCase,
+        test_session_factory,
+    ):
+        """Test starting already started todo fails and rolls back."""
+        # Create project and todo
+        project_dto = ProjectCreateDto(
+            name='Already Started Test Project',
+            description='Project for testing already started todo',
+        )
+        created_project = create_project_usecase.execute(project_dto)
+
+        todo_dto = AddTodoToProjectDto(
+            title='Todo to Start Twice',
+            description='This todo will be started twice',
+            dependencies=[],
+        )
+        added_todo = add_todo_usecase.execute(created_project.id, todo_dto)
+
+        # Start todo first time (should succeed)
+        result1 = start_todo_usecase.execute(created_project.id, added_todo.id)
+        assert result1.status == 'in_progress'
+
+        # Before second start: Check outbox has 4 events
+        with test_session_factory() as session:
+            outbox_count_before = session.query(OutboxModel).count()
+            assert outbox_count_before == 4  # ProjectCreated + TodoCreated + TodoAddedToProject + TodoStarted
+
+        # Try to start todo second time (should fail)
+        with pytest.raises(TodoAlreadyStartedError):
+            start_todo_usecase.execute(created_project.id, added_todo.id)
+
+        # After: Check outbox count remains the same (rollback worked)
+        with test_session_factory() as session:
+            outbox_count_after = session.query(OutboxModel).count()
+            assert outbox_count_after == outbox_count_before
+            assert outbox_count_after == 4
+
+    def test_multiple_todo_starts_create_multiple_outbox_entries(
         self, test_session_factory
     ):
-        """Test completing multiple todos creates multiple outbox entries."""
+        """Test starting multiple todos creates multiple outbox entries."""
         todo_data = [
-            ('Complete Test Todo 1', 'First todo to complete'),
-            ('Complete Test Todo 2', 'Second todo to complete'),
-            ('Complete Test Todo 3', 'Third todo to complete'),
+            ('Start Test Todo 1', 'First todo to start'),
+            ('Start Test Todo 2', 'Second todo to start'),
+            ('Start Test Todo 3', 'Third todo to start'),
         ]
 
         todo_ids = []
 
-        # Create project and todos, then complete them one by one
+        # Create project and todos, then start them one by one
         for i, (title, description) in enumerate(todo_data, 1):
             # Create new UoW for each operation
             class TestUoW(SqlAlchemyUnitOfWork):
@@ -315,8 +302,8 @@ class TestCompleteTodoThroughProjectUseCase:
             uow = TestUoW()
             create_usecase = new_create_project_usecase(uow)
             project_dto = ProjectCreateDto(
-                name=f'Complete Test Project {i}',
-                description=f'Project {i} for testing todo completion',
+                name=f'Start Test Project {i}',
+                description=f'Project {i} for testing todo start',
             )
             created_project = create_usecase.execute(project_dto)
 
@@ -329,75 +316,68 @@ class TestCompleteTodoThroughProjectUseCase:
             )
             added_todo = add_usecase.execute(created_project.id, todo_dto)
 
-            # Start todo first
+            # Start todo
             uow = TestUoW()
             start_usecase = new_start_todo_through_project_usecase(uow)
-            start_usecase.execute(created_project.id, added_todo.id)
-
-            # Complete todo
-            uow = TestUoW()
-            complete_usecase = new_complete_todo_through_project_usecase(uow)
-            result = complete_usecase.execute(created_project.id, added_todo.id)
+            result = start_usecase.execute(created_project.id, added_todo.id)
 
             todo_ids.append(result.id)
-            assert result.status == 'completed'
+            assert result.status == 'in_progress'
 
-            # Verify outbox entry count increases with each completion
+            # Verify outbox entry count increases with each start
             with test_session_factory() as session:
-                todo_completed_events = session.query(OutboxModel).filter(
-                    OutboxModel.event_type == 'TodoCompleted'
+                todo_started_events = session.query(OutboxModel).filter(
+                    OutboxModel.event_type == 'TodoStarted'
                 ).count()
-                assert todo_completed_events == i
+                assert todo_started_events == i
 
-        # Final verification: all TodoCompleted events are in outbox
+        # Final verification: all TodoStarted events are in outbox
         with test_session_factory() as session:
-            complete_events = session.query(OutboxModel).filter(
-                OutboxModel.event_type == 'TodoCompleted'
+            start_events = session.query(OutboxModel).filter(
+                OutboxModel.event_type == 'TodoStarted'
             ).all()
-            assert len(complete_events) == 3
+            assert len(start_events) == 3
 
             # Verify all entries are unpublished
-            for entry in complete_events:
+            for entry in start_events:
                 assert entry.published is False
-                assert entry.event_type == 'TodoCompleted'
+                assert entry.event_type == 'TodoStarted'
 
-    def test_outbox_entries_contain_complete_event_data(
+    def test_outbox_entries_contain_complete_start_event_data(
         self,
         create_project_usecase: CreateProjectUseCase,
         add_todo_usecase: AddTodoToProjectUseCase,
         start_todo_usecase: StartTodoThroughProjectUseCase,
-        complete_todo_usecase: CompleteTodoThroughProjectUseCase,
         test_session_factory,
     ):
-        """Test that outbox entries contain all necessary completion event data."""
+        """Test that outbox entries contain all necessary start event data."""
         # Create project and todo
         project_dto = ProjectCreateDto(
-            name='Complete Data Test',
-            description='Testing complete completion event data',
+            name='Complete Data Start Test',
+            description='Testing complete start event data',
         )
         created_project = create_project_usecase.execute(project_dto)
 
         todo_dto = AddTodoToProjectDto(
-            title='Complete Test Todo',
-            description='Testing complete completion event data',
+            title='Complete Start Test Todo',
+            description='Testing complete start event data',
             dependencies=[],
         )
         added_todo = add_todo_usecase.execute(created_project.id, todo_dto)
 
-        # Start and complete todo
+        # Start todo
         start_todo_usecase.execute(created_project.id, added_todo.id)
-        complete_todo_usecase.execute(created_project.id, added_todo.id)
 
         with test_session_factory() as session:
-            complete_entry = None
+            start_entry = None
             for entry in session.query(OutboxModel).all():
-                if entry.event_type == 'TodoCompleted':
-                    complete_entry = entry
+                if entry.event_type == 'TodoStarted':
+                    start_entry = entry
                     break
 
-            assert complete_entry is not None
+            assert start_entry is not None
 
-            payload = complete_entry.payload
+            payload = start_entry.payload
 
             # Verify all required fields are present
             required_fields = [
@@ -414,14 +394,14 @@ class TestCompleteTodoThroughProjectUseCase:
                 assert field in payload, f'Missing field: {field}'
 
             # Verify field values
-            assert payload['event_type'] == 'TodoCompleted'
+            assert payload['event_type'] == 'TodoStarted'
             assert payload['todo_id'] == added_todo.id
             assert payload['project_id'] == created_project.id
             assert payload['aggregate_id'] == added_todo.id
-            assert payload['title'] == 'Complete Test Todo'
+            assert payload['title'] == 'Complete Start Test Todo'
 
-    def test_error_during_completion_rolls_back_outbox(self, test_session_factory):
-        """Test that errors during completion operation roll back outbox entries."""
+    def test_error_during_start_rolls_back_outbox(self, test_session_factory):
+        """Test that errors during start operation roll back outbox entries."""
         # Create project and todo first
         class TestUoW(SqlAlchemyUnitOfWork):
             def __enter__(self):
@@ -433,29 +413,24 @@ class TestCompleteTodoThroughProjectUseCase:
         uow = TestUoW()
         create_usecase = new_create_project_usecase(uow)
         project_dto = ProjectCreateDto(
-            name='Failing Complete Project',
-            description='This completion should fail',
+            name='Failing Start Project',
+            description='This start should fail',
         )
         created_project = create_usecase.execute(project_dto)
 
         uow = TestUoW()
         add_usecase = new_add_todo_to_project_usecase(uow)
         todo_dto = AddTodoToProjectDto(
-            title='Failing Complete Todo',
-            description='This completion should fail',
+            title='Failing Start Todo',
+            description='This start should fail',
             dependencies=[],
         )
         added_todo = add_usecase.execute(created_project.id, todo_dto)
 
-        # Start the todo
-        uow = TestUoW()
-        start_usecase = new_start_todo_through_project_usecase(uow)
-        start_usecase.execute(created_project.id, added_todo.id)
-
-        # Verify creation and start events were saved
+        # Verify creation events were saved
         with test_session_factory() as session:
             outbox_count_before = session.query(OutboxModel).count()
-            assert outbox_count_before == 4  # ProjectCreated + TodoCreated + TodoAddedToProject + TodoStarted
+            assert outbox_count_before == 3
 
         # Create a UoW that will fail during commit
         class FailingUoW(SqlAlchemyUnitOfWork):
@@ -469,17 +444,17 @@ class TestCompleteTodoThroughProjectUseCase:
                 # Call parent to add events to session
                 super()._flush_outbox()
                 # Then raise an exception to simulate DB error
-                raise RuntimeError('Simulated completion database error')
+                raise RuntimeError('Simulated start database error')
 
         failing_uow = FailingUoW()
-        complete_usecase = new_complete_todo_through_project_usecase(failing_uow)
+        start_usecase = new_start_todo_through_project_usecase(failing_uow)
 
         # Should raise the simulated error
-        with pytest.raises(RuntimeError, match='Simulated completion database error'):
-            complete_usecase.execute(created_project.id, added_todo.id)
+        with pytest.raises(RuntimeError, match='Simulated start database error'):
+            start_usecase.execute(created_project.id, added_todo.id)
 
         # Verify no new outbox entries were saved due to rollback
         with test_session_factory() as session:
             outbox_count_after = session.query(OutboxModel).count()
-            assert outbox_count_after == outbox_count_before  # Still only creation + start events
-            assert outbox_count_after == 4
+            assert outbox_count_after == outbox_count_before  # Still only creation events
+            assert outbox_count_after == 3

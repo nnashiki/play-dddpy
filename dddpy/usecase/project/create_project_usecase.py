@@ -1,16 +1,15 @@
-"""This module provides use case for creating a new Project entity."""
+"""UoW-based CreateProjectUseCase implementation."""
 
 from abc import ABC, abstractmethod
 
-from dddpy.domain.project.entities import Project
-from dddpy.domain.project.repositories import ProjectRepository
 from dddpy.domain.project.services import ProjectDomainService
 from dddpy.domain.project.value_objects import ProjectName
-from dddpy.domain.project.events.project_created_event import ProjectCreatedEvent
-from dddpy.domain.todo.events import TodoCreatedEvent
-from dddpy.domain.shared.events import DomainEventPublisher
 from dddpy.dto.project import ProjectCreateDto, ProjectOutputDto
 from dddpy.usecase.assembler.project_create_assembler import ProjectCreateAssembler
+from dddpy.infrastructure.sqlite.uow import SqlAlchemyUnitOfWork
+from dddpy.infrastructure.sqlite.project.project_repository import (
+    new_project_repository,
+)
 
 
 class CreateProjectUseCase(ABC):
@@ -22,51 +21,54 @@ class CreateProjectUseCase(ABC):
 
 
 class CreateProjectUseCaseImpl(CreateProjectUseCase):
-    """CreateProjectUseCaseImpl implements the use case for creating a new Project."""
+    """UoW-based implementation of CreateProjectUseCase."""
 
-    def __init__(
-        self,
-        project_repository: ProjectRepository,
-        event_publisher: DomainEventPublisher,
-    ):
-        self.project_repository = project_repository
-        self.event_publisher = event_publisher
+    def __init__(self, uow: SqlAlchemyUnitOfWork) -> None:
+        self.uow = uow
 
     def execute(self, dto: ProjectCreateDto) -> ProjectOutputDto:
-        """execute creates a new Project."""
-        # Validate project name uniqueness using domain service
-        name_vo = ProjectName(dto.name)
-        if not ProjectDomainService.is_project_name_unique(
-            name_vo, self.project_repository
-        ):
-            raise ValueError(f"Project name '{dto.name}' already exists")
+        """execute creates a new Project with transactional outbox support."""
+        result: ProjectOutputDto
 
-        # Set database session for event handlers
-        session = self.project_repository.get_session()
-        self.event_publisher.set_session(session)
+        with self.uow as uow:
+            # Check that UoW was properly initialized
+            if uow.session is None or uow.event_publisher is None:
+                raise RuntimeError('UoW was not properly initialized')
 
-        # Create project using Assembler with event publisher
-        project = ProjectCreateAssembler.to_entity(dto, self.event_publisher)
+            # Create repository with UoW session
+            project_repository = new_project_repository(uow.session)
 
-        # Save project
-        self.project_repository.save(project)
+            # Validate project name uniqueness using domain service
+            name_vo = ProjectName(dto.name)
+            if not ProjectDomainService.is_project_name_unique(
+                name_vo, project_repository
+            ):
+                raise ValueError(f"Project name '{dto.name}' already exists")
 
-        # Events are automatically published via DomainEventPublisher during project creation
+            # Create project using Assembler with event publisher from UoW
+            project = ProjectCreateAssembler.to_entity(dto, uow.event_publisher)
 
-        # Convert to output DTO
-        return ProjectOutputDto(
-            id=str(project.id.value),
-            name=project.name.value,
-            description=project.description.value,
-            todos=[],  # New project has no todos
-            created_at=project.created_at,
-            updated_at=project.updated_at,
-        )
+            # Save project
+            project_repository.save(project)
+
+            # Events are automatically published via DomainEventPublisher during project creation
+            # UoW will flush events to outbox and commit transaction
+
+            # Convert to output DTO
+            result = ProjectOutputDto(
+                id=str(project.id.value),
+                name=project.name.value,
+                description=project.description.value,
+                todos=[],  # New project has no todos
+                created_at=project.created_at,
+                updated_at=project.updated_at,
+            )
+
+        return result
 
 
 def new_create_project_usecase(
-    project_repository: ProjectRepository,
-    event_publisher: DomainEventPublisher,
+    uow: SqlAlchemyUnitOfWork,
 ) -> CreateProjectUseCase:
     """Create a new instance of CreateProjectUseCase."""
-    return CreateProjectUseCaseImpl(project_repository, event_publisher)
+    return CreateProjectUseCaseImpl(uow)

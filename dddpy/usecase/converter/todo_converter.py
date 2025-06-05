@@ -27,6 +27,7 @@ class TodoConverter:
             description=todo.description.value if todo.description else None,
             status=todo.status.value,
             dependencies=[str(dep.value) for dep in todo.dependencies.values],
+            project_id=str(todo.project_id.value),
             created_at=todo.created_at,
             updated_at=todo.updated_at,
             completed_at=todo.completed_at,

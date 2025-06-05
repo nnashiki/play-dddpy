@@ -9,9 +9,9 @@ from dddpy.infrastructure.sqlite.database import Base
 from dddpy.infrastructure.sqlite.uow import SqlAlchemyUnitOfWork
 from dddpy.infrastructure.sqlite.outbox.outbox_model import OutboxModel
 from dddpy.dto.project import ProjectCreateDto
-from dddpy.usecase.project.create_project_with_uow_usecase import (
-    CreateProjectWithUoWUseCase,
-    new_create_project_with_uow_usecase,
+from dddpy.usecase.project.create_project_usecase import (
+    CreateProjectUseCase,
+    new_create_project_usecase,
 )
 
 
@@ -45,15 +45,15 @@ def test_uow(test_session_factory):
 
 @pytest.fixture
 def create_project_usecase(test_uow):
-    """Create CreateProjectWithUoWUseCase for testing."""
-    return new_create_project_with_uow_usecase(test_uow)
+    """Create CreateProjectUseCase for testing."""
+    return new_create_project_usecase(test_uow)
 
 
-class TestCreateProjectWithUoWUseCase:
-    """Test cases for CreateProjectWithUoWUseCase matching demo scripts."""
+class TestCreateProjectUseCase:
+    """Test cases for CreateProjectUseCase matching demo scripts."""
 
     def test_create_project_successfully_saves_to_outbox(
-        self, create_project_usecase: CreateProjectWithUoWUseCase, test_session_factory
+        self, create_project_usecase: CreateProjectUseCase, test_session_factory
     ):
         """Test successful project creation saves event to outbox (demo_outbox.py equivalent)."""
         # Before: Check outbox is empty
@@ -95,7 +95,7 @@ class TestCreateProjectWithUoWUseCase:
             assert payload['description'] == 'Project created to test outbox pattern'
 
     def test_duplicate_project_name_fails_and_rolls_back_outbox(
-        self, create_project_usecase: CreateProjectWithUoWUseCase, test_session_factory
+        self, create_project_usecase: CreateProjectUseCase, test_session_factory
     ):
         """Test duplicate project creation fails and rolls back outbox (demo_rollback.py equivalent)."""
         # Create first project successfully
@@ -153,7 +153,7 @@ class TestCreateProjectWithUoWUseCase:
                     return self
 
             uow = TestUoW()
-            usecase = new_create_project_with_uow_usecase(uow)
+            usecase = new_create_project_usecase(uow)
 
             dto = ProjectCreateDto(name=name, description=description)
             result = usecase.execute(dto)
@@ -183,7 +183,7 @@ class TestCreateProjectWithUoWUseCase:
                 assert entry.event_type == 'ProjectCreated'
 
     def test_outbox_entries_contain_complete_event_data(
-        self, create_project_usecase: CreateProjectWithUoWUseCase, test_session_factory
+        self, create_project_usecase: CreateProjectUseCase, test_session_factory
     ):
         """Test that outbox entries contain all necessary event data."""
         dto = ProjectCreateDto(
@@ -237,7 +237,7 @@ class TestCreateProjectWithUoWUseCase:
                 raise RuntimeError('Simulated database error')
 
         failing_uow = FailingUoW()
-        usecase = new_create_project_with_uow_usecase(failing_uow)
+        usecase = new_create_project_usecase(failing_uow)
 
         dto = ProjectCreateDto(name='Failing Project', description='This should fail')
 

@@ -10,8 +10,8 @@ from dddpy.infrastructure.sqlite.database import Base
 from dddpy.infrastructure.sqlite.uow import SqlAlchemyUnitOfWork
 from dddpy.infrastructure.sqlite.outbox.outbox_model import OutboxModel
 from dddpy.dto.project import ProjectCreateDto
-from dddpy.usecase.project.create_project_with_uow_usecase import (
-    new_create_project_with_uow_usecase,
+from dddpy.usecase.project.create_project_usecase import (
+    new_create_project_usecase,
 )
 
 
@@ -206,8 +206,8 @@ class TestOutboxModel:
             assert saved_entry.created_at is not None  # Auto-generated
 
 
-class TestCreateProjectWithUoWIntegration:
-    """Integration tests for CreateProjectWithUoWUseCase."""
+class TestCreateProjectIntegration:
+    """Integration tests for CreateProjectUseCase."""
 
     def test_create_project_saves_to_outbox(self, test_session_factory):
         """Test that creating a project saves event to outbox."""
@@ -222,7 +222,7 @@ class TestCreateProjectWithUoWIntegration:
 
         # Create UseCase with test UoW
         uow = TestUoW()
-        usecase = new_create_project_with_uow_usecase(uow)
+        usecase = new_create_project_usecase(uow)
 
         # Create project
         dto = ProjectCreateDto(name='Test Project', description='Test Description')
@@ -259,7 +259,7 @@ class TestCreateProjectWithUoWIntegration:
 
         # Create first project successfully
         uow1 = TestUoW()
-        usecase1 = new_create_project_with_uow_usecase(uow1)
+        usecase1 = new_create_project_usecase(uow1)
 
         dto = ProjectCreateDto(
             name='Duplicate Test Project', description='First project'
@@ -275,7 +275,7 @@ class TestCreateProjectWithUoWIntegration:
 
         # Try to create project with same name (should fail)
         uow2 = TestUoW()
-        usecase2 = new_create_project_with_uow_usecase(uow2)
+        usecase2 = new_create_project_usecase(uow2)
 
         dto2 = ProjectCreateDto(
             name='Duplicate Test Project',  # Same name
@@ -309,7 +309,7 @@ class TestCreateProjectWithUoWIntegration:
 
         for i, name in enumerate(project_names):
             uow = TestUoW()
-            usecase = new_create_project_with_uow_usecase(uow)
+            usecase = new_create_project_usecase(uow)
 
             dto = ProjectCreateDto(name=name, description=f'Description for {name}')
 
